@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "844099394384",
+    "project_id": "penyewaan-lapangan-64a01",
+    "storage_bucket": "penyewaan-lapangan-64a01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:844099394384:android:7a0d3f658950910a4eea55",
+        "android_client_info": {
+          "package_name": "com.example.penyewaan_lapangan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "844099394384-tk6tsrvnppuvuafu4eshqfhq2m1hl9eu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMctzev8eAbtL-90qWCoypkOA_7_t8kPw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "844099394384-tk6tsrvnppuvuafu4eshqfhq2m1hl9eu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "844099394384-bdqskphuvssj89b9kkbhe9iguef611lu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.penyewaanLapangan"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:844099394384:android:bf2a2d2d930904a04eea55",
+        "android_client_info": {
+          "package_name": "com.example.sportsfield"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "844099394384-3ta3p6ve22cq5784nkn1neipq6rft0r2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sportsfield",
+            "certificate_hash": "ed4ae448c4a6796b196af95917381dd9d7fe3569"
+          }
+        },
+        {
+          "client_id": "844099394384-tk6tsrvnppuvuafu4eshqfhq2m1hl9eu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMctzev8eAbtL-90qWCoypkOA_7_t8kPw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "844099394384-tk6tsrvnppuvuafu4eshqfhq2m1hl9eu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "844099394384-bdqskphuvssj89b9kkbhe9iguef611lu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.penyewaanLapangan"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
