@@ -74,3 +74,10 @@ jobs:
             -F document=@$file \
             -F caption="📦 $(basename $file) berhasil di-build 🚀"
           done
+
+      - name: Cache Flutter
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
