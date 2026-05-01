@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'detail_screen.dart';
-
-// Import model (sesuaikan path-nya)
-// import '../models/field_model.dart'; 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:penyewaan_lapangan/models/field_model.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -13,49 +14,46 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Simulasi data dari Database/API
-  Future<List<Map<String, dynamic>>> fetchFields() async {
-    await Future.delayed(const Duration(seconds: 2)); // Simulasi loading internet
-    return [
-      {
-        "name": "Badminton Smash Center",
-        "price": "75.000",
-        "img": "https://images.unsplash.com/photo-1521537634581-0dced2fee2ef",
-        "rating": "4.9",
-        "dist": "2.4 km",
-        "description": "Lapangan dengan karpet standar internasional dan pencahayaan terbaik.",
-        "category": "Badminton"
-      },
-      {
-        "name": "Futsal Indramayu Sport",
-        "price": "120.000",
-        "img": "https://images.unsplash.com/photo-1574629810360-7efbbe195018",
-        "rating": "4.7",
-        "dist": "1.2 km",
-        "description": "Rumput sintetis kualitas premium, cocok untuk turnamen lokal.",
-        "category": "Futsal"
-      },
-      {
-        "name": "Basket Court Karanganyar",
-        "price": "50.000",
-        "img": "https://images.unsplash.com/photo-1544919982-b61976f0ba43",
-        "rating": "4.8",
-        "dist": "3.1 km",
-        "description": "Lapangan indoor dengan ring standar NBA.",
-        "category": "Basket"
-      },
-    ];
+  late Future<List<FieldModel>> futureFields;
+
+  @override
+  void initState() {
+    super.initState();
+    futureFields = fetchFields();
+  }
+
+  // 🔥 Ambil data dari Laravel API
+  Future<List<FieldModel>> fetchFields() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.1.15:8000/api/fields'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['data'] as List)
+            .map((json) => FieldModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Gagal ambil data');
+      }
+    } catch (e) {
+      print("Error Fetching: $e");
+      return [];
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: fetchFields(),
+      body: FutureBuilder<List<FieldModel>>(
+        future: futureFields,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF00A32A)));
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00A32A)),
+            );
           }
 
           if (snapshot.hasError) {
@@ -71,20 +69,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildHeader(),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  child: Text("Kategori Olahraga", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  child: Text("Kategori Olahraga",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 ),
                 _buildCategories(),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Text("Venue Pilihan Untukmu", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  child: Text("Venue Pilihan Untukmu",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 ),
-                // Horizontal List Dinamis
                 _buildHorizontalList(context, dataFields),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  child: Text("Rekomendasi Terdekat", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  child: Text("Rekomendasi Terdekat",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 ),
-                // Vertical List Dinamis
                 _buildVerticalList(dataFields),
               ],
             ),
@@ -94,9 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET HELPER (Hanya bagian List yang diubah logicnya) ---
+  // ================= UI =================
 
-  Widget _buildHorizontalList(BuildContext context, List<Map<String, dynamic>> fields) {
+  Widget _buildHorizontalList(BuildContext context, List<FieldModel> fields) {
     return SizedBox(
       height: 250,
       child: ListView.builder(
@@ -110,35 +109,70 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _cardVenue(BuildContext context, Map<String, dynamic> field) {
+  Widget _cardVenue(BuildContext context, FieldModel field) {
     return Container(
       width: 220,
       margin: const EdgeInsets.only(right: 15, bottom: 10),
       child: InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(field: field))),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailScreen(field: field),
+          ),
+        ),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 15, offset: const Offset(0, 8))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              )
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(field['img'], height: 120, width: double.infinity, fit: BoxFit.cover),
-              ),
+              // KODE BARU (Benar untuk SVG)
+ClipRRect(
+  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+  child: SvgPicture.network(
+    field.imageUrl ?? '', // Path SVG lengkap (misal: http://192.168.1.15:8000/uploads/...)
+    height: 120,
+    width: double.infinity,
+    fit: BoxFit.cover,
+    // Placeholder jika gambar loading atau error
+    placeholderBuilder: (BuildContext context) => Container(
+        height: 120, 
+        color: Colors.grey[200], 
+        child: const Center(child: CircularProgressIndicator())
+    ),
+  ),
+),
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(field['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(
+                      field.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 4),
-                    Text("${field['dist']} dari sini", style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                    const Text("Tersedia",
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
                     const SizedBox(height: 10),
-                    Text("Rp ${field['price']} / jam", style: const TextStyle(color: Color(0xFF00A32A), fontWeight: FontWeight.bold)),
+                    Text(
+                      "Rp ${field.price} / jam",
+                      style: const TextStyle(
+                        color: Color(0xFF00A32A),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -149,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildVerticalList(List<Map<String, dynamic>> fields) {
+  Widget _buildVerticalList(List<FieldModel> fields) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -157,30 +191,51 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: fields.length,
       itemBuilder: (context, index) {
         final field = fields[index];
+
         return Card(
           margin: const EdgeInsets.only(bottom: 15),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           child: ListTile(
             leading: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(field['img'], width: 60, height: 60, fit: BoxFit.cover),
+              child: Image.network(
+                field.imageUrl ?? '',
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.image, color: Colors.grey),
+                ),
+              ),
             ),
-            title: Text(field['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text("⭐ ${field['rating']} | ${field['dist']}"),
+            title: Text(field.name,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text("${field.type} | Rp ${field.price}"),
             trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(field: field))),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailScreen(field: field),
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  // Header Tetap Sama
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 30),
       decoration: const BoxDecoration(
         color: Color(0xFF00A32A),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
       ),
       child: Column(
         children: [
@@ -190,13 +245,19 @@ class _HomeScreenState extends State<HomeScreen> {
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Lokasi Kamu", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text("📍 Indramayu, ID", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text("Lokasi Kamu",
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text("📍 Indramayu, ID",
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
               GestureDetector(
                 onTap: widget.onProfileTap,
-                child: const CircleAvatar(backgroundColor: Colors.white24, child: Icon(Icons.person, color: Colors.white)),
+                child: const CircleAvatar(
+                  backgroundColor: Colors.white24,
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -207,7 +268,10 @@ class _HomeScreenState extends State<HomeScreen> {
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],
@@ -216,7 +280,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategories() {
-    // Bisa dibuat dinamis juga seperti List lapangan
-    return const SizedBox(height: 100, child: Center(child: Text("Kategori Widget Di Sini")));
+    return const SizedBox(
+      height: 50,
+      child: Center(child: Text("Sepak Bola • Futsal • Badminton")),
+    );
   }
 }

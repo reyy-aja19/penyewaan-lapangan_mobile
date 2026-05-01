@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'schedule_screen.dart'; // Pastikan import ini benar agar bisa pindah ke Jadwal
+import 'package:penyewaan_lapangan/models/field_model.dart'; // Pastikan path import benar
+import 'schedule_screen.dart'; 
 
 class DetailScreen extends StatelessWidget {
-  // Variabel untuk menampung data dari HomeScreen
-  final Map<String, dynamic> field;
+  // SEKARANG: Menggunakan FieldModel, bukan Map lagi
+  final FieldModel field;
 
   const DetailScreen({super.key, required this.field});
 
@@ -17,11 +18,11 @@ class DetailScreen extends StatelessWidget {
           // --- GAMBAR HEADER ---
           Stack(
             children: [
-              Container(
+              SizedBox(
                 height: 250, 
                 width: double.infinity,
                 child: Image.network(
-                  field['img'] ?? field['image'] ?? "", 
+                  field.imageUrl ?? "", // Menggunakan properti dari FieldModel
                   fit: BoxFit.cover,
                   errorBuilder: (context, e, s) => Container(
                     color: Colors.blueGrey[200], 
@@ -56,23 +57,28 @@ class DetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  field['name'] ?? "Nama Lapangan", 
+                  field.name, // Menggunakan field.name
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
                 ),
                 const SizedBox(height: 5),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 20),
-                    Text(" ${field['rating'] ?? '0.0'} Rating • Kab. Indramayu")
+                    // Catatan: Jika FieldModel belum ada rating, bisa hardcode dulu atau tambah ke model
+                    const Text(" 4.5 Rating • Kab. Indramayu") 
                   ],
                 ),
                 const Divider(height: 30),
                 const Text("Fasilitas", style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                const Text("🚲 parkir mobil/motor       🥤 jual minuman\n🚽 toilet               🍔 jual makanan\n🎾jual peralatan olahraga"),
+                const Text("🚲 parkir mobil/motor      🥤 jual minuman\n🚽 toilet               🍔 jual makanan\n🎾 jual peralatan olahraga"),
                 const SizedBox(height: 20),
-                const Text("Ulasan", style: TextStyle(fontWeight: FontWeight.bold)),
-                Text("${field['rating'] ?? '0.0'} / 5.0 ⭐⭐⭐⭐⭐"),
+                const Text("Deskripsi", style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                Text(
+                  field.description ?? "Tidak ada deskripsi untuk lapangan ini.",
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -95,20 +101,20 @@ class DetailScreen extends StatelessWidget {
                   children: [
                     const Text("Mulai dari", style: TextStyle(fontSize: 12, color: Colors.grey)),
                     Text(
-                      "Rp ${field['price'] ?? '0'}", 
+                      "Rp ${field.price}", // Menggunakan field.price
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF00A32A))
                     )
                   ],
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // PERBAIKAN: Pindah ke ScheduleScreen sambil bawa bekal data nama & harga
+                    // Pindah ke ScheduleScreen membawa data dari FieldModel
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ScheduleScreen(
-                          namaLapangan: field['name'] ?? "Nama Lapangan",
-                          hargaLapangan: "Rp ${field['price'] ?? '0'}",
+                          namaLapangan: field.name,
+                          hargaLapangan: "Rp ${field.price}",
                         ),
                       ),
                     );
