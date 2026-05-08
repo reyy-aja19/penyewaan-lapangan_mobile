@@ -1,184 +1,150 @@
 import 'package:flutter/material.dart';
-import 'checkout_screen.dart';
+import '../services/api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
-  final String namaLapangan;
-  final String hargaLapangan;
-
-  const HistoryScreen({
-    super.key, 
-    required this.namaLapangan, 
-    required this.hargaLapangan,
-  });
+  const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _ScheduleScreenState();
+  State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _ScheduleScreenState extends State<HistoryScreen> {
-  // Daftar jam tersedia
-  final List<String> _timeSlots = [
-    "08:00", "09:00", "10:00", "11:00", "13:00", 
-    "14:00", "15:00", "16:00", "19:00", "20:00", "21:00"
-  ];
+class _HistoryScreenState extends State<HistoryScreen> {
+  final ApiService _apiService = ApiService();
+  late Future<List<dynamic>> _historyFuture;
 
-  // List untuk menampung jam yang dipilih (Maksimal 2)
-  List<String> _selectedTimes = [];
+  @override
+  void initState() {
+    super.initState();
+    _historyFuture = _apiService.getBookingHistory(1); // Sementara User ID 1
+  }
+
+  void _refreshData() {
+    setState(() {
+      _historyFuture = _apiService.getBookingHistory(1);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Format YYYY-MM-DD agar database tidak menolak (Error 500)
-    String tanggalUntukAPI = "2026-04-10"; 
-    String tanggalTampilan = "10 April 2026"; 
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "Pilih Jadwal", 
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          title: const Text("Riwayat Sewa", 
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            IconButton(onPressed: _refreshData, icon: const Icon(Icons.refresh, color: Colors.black))
+          ],
+          bottom: const TabBar(
+            labelColor: Color(0xFF00A32A),
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Color(0xFF00A32A),
+            tabs: [
+              Tab(text: "Aktif"),
+              Tab(text: "Selesai"),
+            ],
+          ),
         ),
-        leading: const BackButton(color: Colors.black),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        body: FutureBuilder<List<dynamic>>(
+          future: _historyFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Center(child: Text("Gagal memuat riwayat"));
+            }
+
+            final allBookings = snapshot.data!;
+            
+            // Filter Data Aktif vs Selesai (Logika Sederhana)
+            final activeBookings = allBookings.where((b) => 
+                b['status'] == 'Lunas' || b['status'] == 'DP').toList();
+            final finishedBookings = allBookings.where((b) => 
+                b['status'] != 'Lunas' && b['status'] != 'DP').toList();
+
+            return TabBarView(
+              children: [
+                _buildList(activeBookings, "Tidak ada penyewaan aktif"),
+                _buildList(finishedBookings, "Belum ada riwayat selesai"),
+              ],
+            );
+          },
+        ),
       ),
-      body: Column(
-        // PERBAIKAN: Typo crossAxisAligment sudah diperbaiki menjadi crossAxisAlignment
+    );
+  }
+
+  Widget _buildList(List<dynamic> bookings, String emptyMessage) {
+    if (bookings.isEmpty) {
+      return Center(child: Text(emptyMessage, style: const TextStyle(color: Colors.grey)));
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async => _refreshData(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: bookings.length,
+        itemBuilder: (context, index) {
+          final b = bookings[index];
+          
+          // Penentuan Warna Status
+          Color statusColor = const Color(0xFF00A32A);
+          if (b['status'] == 'Selesai') statusColor = Colors.grey;
+          if (b['status'] == 'Batal') statusColor = Colors.red;
+
+          return _historyCard(
+            b['lapangan']['nama_lapangan'] ?? "Lapangan",
+            b['booking_date'].toString().substring(0, 10),
+            "${b['start_time']} - ${b['end_time']}",
+            b['status'],
+            statusColor,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _historyCard(String title, String date, String time, String status, Color statusColor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Info Nama Lapangan & Limit
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-            child: Text(
-              "${widget.namaLapangan} • Pilih Maksimal 2 Jam",
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Text("Tanggal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00A32A).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFF00A32A)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, color: Color(0xFF00A32A)),
-                const SizedBox(width: 15),
-                Text(
-                  tanggalTampilan, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ],
-            ),
-          ),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Text("Pilih Jam", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          ),
-
-          // Grid Jam
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+                child: Text(status, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
-              itemCount: _timeSlots.length,
-              itemBuilder: (context, index) {
-                String time = _timeSlots[index];
-                bool isSelected = _selectedTimes.contains(time);
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedTimes.remove(time);
-                      } else {
-                        if (_selectedTimes.length < 2) {
-                          _selectedTimes.add(time);
-                          _selectedTimes.sort(); 
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Cukup 2 jam saja, jangan maruk Bujang!"),
-                              duration: Duration(seconds: 1),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        }
-                      }
-                    });
-                  },
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF00A32A) : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF00A32A) : Colors.grey.shade300
-                      ),
-                    ),
-                    child: Text(
-                      time,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+            ],
           ),
-
-          // Tombol Konfirmasi
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: ElevatedButton(
-              onPressed: _selectedTimes.isEmpty 
-                ? null 
-                : () {
-                    // Logika Hitung Harga
-                    int hargaSatuan = int.parse(widget.hargaLapangan.replaceAll(RegExp(r'[^0-9]'), ''));
-                    int totalHarga = hargaSatuan * _selectedTimes.length;
-                    
-                    String hargaFinal = "Rp ${totalHarga.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CheckoutScreen(
-                          namaLapangan: widget.namaLapangan,
-                          tanggal: tanggalUntukAPI, // Mengirim format YYYY-MM-DD
-                          jam: _selectedTimes.join(", "), 
-                          harga: hargaFinal,
-                        ),
-                      ),
-                    );
-                  },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00A32A),
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              ),
-              child: Text(
-                _selectedTimes.isEmpty 
-                    ? "Pilih Jam" 
-                    : "Konfirmasi ${_selectedTimes.length} Jam", 
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
-              ),
-            ),
+          const Divider(height: 25),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(date, style: const TextStyle(color: Colors.grey)),
+              const SizedBox(width: 20),
+              const Icon(Icons.access_time, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(time, style: const TextStyle(color: Colors.grey)),
+            ],
           ),
         ],
       ),

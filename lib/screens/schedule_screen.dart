@@ -27,8 +27,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Tanggal tetap ada di sini
-    String tanggalBooking = "10 April 2026"; 
+    // Format YYYY-MM-DD agar database tidak menolak (Error 500)
+    String tanggalUntukAPI = "2026-04-10"; 
+    String tanggalTampilan = "10 April 2026"; 
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -38,8 +39,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
         ),
         leading: const BackButton(color: Colors.black),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Column(
+        // PERBAIKAN: Typo crossAxisAligment sudah diperbaiki menjadi crossAxisAlignment
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Info Nama Lapangan & Limit
@@ -51,7 +55,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
-          // --- BAGIAN TANGGAL (TETAP DIJAGA) ---
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Text("Tanggal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
@@ -69,7 +72,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 const Icon(Icons.calendar_today, color: Color(0xFF00A32A)),
                 const SizedBox(width: 15),
                 Text(
-                  tanggalBooking, 
+                  tanggalTampilan, 
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
                 ),
               ],
@@ -104,9 +107,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       } else {
                         if (_selectedTimes.length < 2) {
                           _selectedTimes.add(time);
-                          _selectedTimes.sort(); // Mengurutkan jam agar rapi
+                          _selectedTimes.sort(); 
                         } else {
-                          // SnackBar jika lebih dari 2 jam
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Cukup 2 jam saja, jangan maruk Bujang!"),
@@ -148,11 +150,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 ? null 
                 : () {
                     // Logika Hitung Harga
-                    // Menghapus 'Rp ' dan titik ribuan
                     int hargaSatuan = int.parse(widget.hargaLapangan.replaceAll(RegExp(r'[^0-9]'), ''));
                     int totalHarga = hargaSatuan * _selectedTimes.length;
                     
-                    // Format kembali ke Rupiah
                     String hargaFinal = "Rp ${totalHarga.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
 
                     Navigator.push(
@@ -160,8 +160,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       MaterialPageRoute(
                         builder: (context) => CheckoutScreen(
                           namaLapangan: widget.namaLapangan,
-                          tanggal: tanggalBooking,
-                          jam: _selectedTimes.join(", "), // Menggabungkan jam, misal: "08:00, 09:00"
+                          tanggal: tanggalUntukAPI, // Mengirim format YYYY-MM-DD
+                          jam: _selectedTimes.join(", "), 
                           harga: hargaFinal,
                         ),
                       ),
