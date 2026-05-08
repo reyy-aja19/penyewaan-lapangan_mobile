@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Import ini untuk format tanggal
 import 'checkout_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -25,9 +26,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- PERBAIKAN: Gunakan format YYYY-MM-DD agar Laravel tidak Error 500 ---
-    String tanggalUntukAPI = "2026-04-10"; 
-    String tanggalTampilan = "10 April 2026"; 
+    // --- LOGIKA TANGGAL REAL-TIME ---
+    DateTime now = DateTime.now();
+    
+    // Format untuk dikirim ke API Laravel (YYYY-MM-DD) -> "2026-05-08"
+    String tanggalUntukAPI = DateFormat('yyyy-MM-dd').format(now);
+    
+    // Format untuk tampilan di UI (contoh: "08 May 2026")
+    String tanggalTampilan = DateFormat('dd MMMM yyyy').format(now);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -37,6 +43,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
         ),
         leading: const BackButton(color: Colors.black),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +159,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       MaterialPageRoute(
                         builder: (context) => CheckoutScreen(
                           namaLapangan: widget.namaLapangan,
-                          tanggal: tanggalUntukAPI, // Kirim format 2026-04-10
+                          tanggal: tanggalUntukAPI, // Mengirim tanggal hari ini
                           jam: _selectedTimes.join(", "), 
                           harga: hargaFinal,
                         ),
