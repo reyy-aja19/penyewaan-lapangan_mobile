@@ -16,18 +16,16 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  // Daftar jam tersedia
   final List<String> _timeSlots = [
     "08:00", "09:00", "10:00", "11:00", "13:00", 
     "14:00", "15:00", "16:00", "19:00", "20:00", "21:00"
   ];
 
-  // List untuk menampung jam yang dipilih (Maksimal 2)
   List<String> _selectedTimes = [];
 
   @override
   Widget build(BuildContext context) {
-    // Format YYYY-MM-DD agar database tidak menolak (Error 500)
+    // --- PERBAIKAN: Gunakan format YYYY-MM-DD agar Laravel tidak Error 500 ---
     String tanggalUntukAPI = "2026-04-10"; 
     String tanggalTampilan = "10 April 2026"; 
 
@@ -39,14 +37,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
         ),
         leading: const BackButton(color: Colors.black),
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: Column(
-        // PERBAIKAN: Typo crossAxisAligment sudah diperbaiki menjadi crossAxisAlignment
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Info Nama Lapangan & Limit
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
             child: Text(
@@ -84,7 +78,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: Text("Pilih Jam", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ),
 
-          // Grid Jam
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -142,14 +135,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
-          // Tombol Konfirmasi
           Container(
             padding: const EdgeInsets.all(20),
             child: ElevatedButton(
               onPressed: _selectedTimes.isEmpty 
                 ? null 
                 : () {
-                    // Logika Hitung Harga
                     int hargaSatuan = int.parse(widget.hargaLapangan.replaceAll(RegExp(r'[^0-9]'), ''));
                     int totalHarga = hargaSatuan * _selectedTimes.length;
                     
@@ -160,7 +151,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       MaterialPageRoute(
                         builder: (context) => CheckoutScreen(
                           namaLapangan: widget.namaLapangan,
-                          tanggal: tanggalUntukAPI, // Mengirim format YYYY-MM-DD
+                          tanggal: tanggalUntukAPI, // Kirim format 2026-04-10
                           jam: _selectedTimes.join(", "), 
                           harga: hargaFinal,
                         ),
