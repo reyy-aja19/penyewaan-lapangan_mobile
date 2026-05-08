@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
+
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  final ApiService _apiService = ApiService();
+  late Future<List<dynamic>> _historyFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _historyFuture = _apiService.getBookingHistory(1); // Sementara User ID 1
+  }
+
+  void _refreshData() {
+    setState(() {
+      _historyFuture = _apiService.getBookingHistory(1);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,9 +31,13 @@ class HistoryScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
-          title: const Text("Riwayat Sewa", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          title: const Text("Riwayat Sewa", 
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.white,
           elevation: 0,
+          actions: [
+            IconButton(onPressed: _refreshData, icon: const Icon(Icons.refresh, color: Colors.black))
+          ],
           bottom: const TabBar(
             labelColor: Color(0xFF00A32A),
             unselectedLabelColor: Colors.grey,
@@ -23,43 +48,63 @@ class HistoryScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildActiveList(),
-            _buildFinishedList(),
-          ],
+        body: FutureBuilder<List<dynamic>>(
+          future: _historyFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Center(child: Text("Gagal memuat riwayat"));
+            }
+
+            final allBookings = snapshot.data!;
+            
+            // Filter Data Aktif vs Selesai (Logika Sederhana)
+            final activeBookings = allBookings.where((b) => 
+                b['status'] == 'Lunas' || b['status'] == 'DP').toList();
+            final finishedBookings = allBookings.where((b) => 
+                b['status'] != 'Lunas' && b['status'] != 'DP').toList();
+
+            return TabBarView(
+              children: [
+                _buildList(activeBookings, "Tidak ada penyewaan aktif"),
+                _buildList(finishedBookings, "Belum ada riwayat selesai"),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildActiveList() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        _historyCard(
-          "Futsal Indramayu Sport",
-          "10 April 2026",
-          "19:00 - 20:00",
-          "Menunggu Main",
-          const Color(0xFF00A32A),
-        ),
-      ],
-    );
-  }
+  Widget _buildList(List<dynamic> bookings, String emptyMessage) {
+    if (bookings.isEmpty) {
+      return Center(child: Text(emptyMessage, style: const TextStyle(color: Colors.grey)));
+    }
 
-  Widget _buildFinishedList() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        _historyCard(
-          "Badminton Smash Center",
-          "05 April 2026",
-          "16:00 - 17:00",
-          "Selesai",
-          Colors.grey,
-        ),
-      ],
+    return RefreshIndicator(
+      onRefresh: () async => _refreshData(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: bookings.length,
+        itemBuilder: (context, index) {
+          final b = bookings[index];
+          
+          // Penentuan Warna Status
+          Color statusColor = const Color(0xFF00A32A);
+          if (b['status'] == 'Selesai') statusColor = Colors.grey;
+          if (b['status'] == 'Batal') statusColor = Colors.red;
+
+          return _historyCard(
+            b['lapangan']['nama_lapangan'] ?? "Lapangan",
+            b['booking_date'].toString().substring(0, 10),
+            "${b['start_time']} - ${b['end_time']}",
+            b['status'],
+            statusColor,
+          );
+        },
+      ),
     );
   }
 
