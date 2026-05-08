@@ -13,6 +13,7 @@ class ApiService {
     required String startTime,
     required String endTime,
     required double totalPrice,
+    required int hours,
   }) async {
     final url = Uri.parse('$baseUrl/booking');
 
@@ -31,6 +32,7 @@ class ApiService {
           'start_time': startTime,
           'end_time': endTime,
           'total_price': totalPrice,
+          'hours': hours,
         }),
       );
 

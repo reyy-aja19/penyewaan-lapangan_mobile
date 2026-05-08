@@ -28,14 +28,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isLoading = true);
 
     final apiService = ApiService();
-    
+
     // Membersihkan string harga (contoh: "Rp 150.000" menjadi 150000.0)
-    double cleanPrice = double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    double cleanPrice =
+        double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
     // Memecah jam (contoh: "08:00 - 09:00" menjadi start: 08:00 dan end: 09:00)
     List<String> timeParts = widget.jam.split(' - ');
     String startTime = timeParts.isNotEmpty ? timeParts[0] : widget.jam;
     String endTime = timeParts.length > 1 ? timeParts[1] : widget.jam;
+
+    int duration = 1;
 
     final result = await apiService.postBooking(
       userId: 1, // Ganti dengan ID user yang sedang login
@@ -45,6 +48,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       startTime: startTime,
       endTime: endTime,
       totalPrice: cleanPrice,
+      hours: duration,
     );
 
     setState(() => _isLoading = false);
@@ -80,8 +84,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Ringkasan Pesanan",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text(
+              "Ringkasan Pesanan",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
             const SizedBox(height: 15),
             Container(
               padding: const EdgeInsets.all(20),
@@ -92,7 +98,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 10,
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -108,11 +114,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            const Text("Metode Pembayaran",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text(
+              "Metode Pembayaran",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
             const SizedBox(height: 15),
             _buildMethodOption("Transfer Bank (VA)", Icons.account_balance),
-            _buildMethodOption("E-Wallet (Dana/OVO)", Icons.account_balance_wallet),
+            _buildMethodOption(
+              "E-Wallet (Dana/OVO)",
+              Icons.account_balance_wallet,
+            ),
             _buildMethodOption("Tunai di Tempat", Icons.payments_outlined),
           ],
         ),
@@ -139,11 +150,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               color: Colors.black.withOpacity(0.03),
               blurRadius: 5,
               offset: const Offset(0, 2),
-            )
+            ),
           ],
         ),
         child: ListTile(
-          leading: Icon(icon, color: isSelected ? const Color(0xFF00A32A) : Colors.grey),
+          leading: Icon(
+            icon,
+            color: isSelected ? const Color(0xFF00A32A) : Colors.grey,
+          ),
           title: Text(
             title,
             style: TextStyle(
@@ -192,17 +206,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00A32A),
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
         child: _isLoading
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               )
             : Text(
                 "Bayar dengan $_selectedMethod",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
       ),
     );
@@ -234,12 +257,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                onPressed: () =>
+                    Navigator.popUntil(context, (route) => route.isFirst),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00A32A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-                child: const Text("Kembali ke Beranda", style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  "Kembali ke Beranda",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],

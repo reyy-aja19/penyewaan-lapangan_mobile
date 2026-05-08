@@ -22,14 +22,14 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
   // Custom styling "CSS" di variabel agar kode lebih bersih
   final _inputDecoration = (String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.green),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.green, width: 2),
-        ),
-      );
+    labelText: label,
+    prefixIcon: Icon(icon, color: Colors.green),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.green, width: 2),
+    ),
+  );
 
   void _submitData() async {
     if (_formKey.currentState!.validate()) {
@@ -64,22 +64,32 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Buat Match Baru", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Buat Match Baru",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: SingleChildScrollView( // Biar keyboard gak nutupin input
+      body: SingleChildScrollView(
+        // Biar keyboard gak nutupin input
         padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Detail Pertandingan", 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+              const Text(
+                "Detail Pertandingan",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
               const SizedBox(height: 20),
-              
+
               // Input Judul
               TextFormField(
                 controller: _titleController,
@@ -91,11 +101,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               // Dropdown Jenis Olahraga
               DropdownButtonFormField(
                 value: _selectedJenis,
-                decoration: _inputDecoration("Jenis Olahraga", Icons.sports_soccer),
+                decoration: _inputDecoration(
+                  "Jenis Olahraga",
+                  Icons.sports_soccer,
+                ),
                 items: ['Futsal', 'Basket', 'Badminton'].map((e) {
                   return DropdownMenuItem(value: e, child: Text(e));
                 }).toList(),
-                onChanged: (val) => setState(() => _selectedJenis = val.toString()),
+                onChanged: (val) =>
+                    setState(() => _selectedJenis = val.toString()),
               ),
               const SizedBox(height: 15),
 
@@ -123,8 +137,13 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ListTile(
-                  leading: const Icon(Icons.calendar_today, color: Colors.green),
-                  title: Text("Tanggal: ${_selectedDate.toLocal()}".split(' ')[0]),
+                  leading: const Icon(
+                    Icons.calendar_today,
+                    color: Colors.green,
+                  ),
+                  title: Text(
+                    "Tanggal: ${_selectedDate.toLocal()}".split(' ')[0],
+                  ),
                   onTap: () async {
                     DateTime? picked = await showDatePicker(
                       context: context,
@@ -147,11 +166,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 5,
                   ),
-                  child: const Text("SIMPAN MATCH", 
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "SIMPAN MATCH",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
