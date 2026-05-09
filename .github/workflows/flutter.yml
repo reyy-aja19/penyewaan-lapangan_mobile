@@ -24,8 +24,9 @@ jobs:
 
       - name: 🔍 Get SHA-1 for Firebase
         run: |
-          find . -name gradlew -exec chmod +x {} \;
-          find . -name gradlew -exec {} signingReport \;
+          cd android
+          chmod +x gradlew
+          ./gradlew signingReport | grep -A 3 "Variant: release" || ./gradlew signingReport
 
       - name: 📦 Install Dependencies
         run: flutter pub get
