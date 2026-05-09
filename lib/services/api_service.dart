@@ -2,9 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // Base URL VPS kamu
   static const String baseUrl = "https://sportsfield.cicd.my.id/api";
 
-  // 1. POST BOOKING (Untuk Checkout)
+  /*
+  |--------------------------------------------------------------------------
+  | 1. POST BOOKING (Untuk Checkout)
+  |--------------------------------------------------------------------------
+  */
   Future<Map<String, dynamic>> postBooking({
     required int userId,
     required int lapanganId,
@@ -36,38 +41,54 @@ class ApiService {
         }),
       );
 
-      // Kita bungkus response-nya agar UI tahu ini sukses atau tidak
+      final decoded = jsonDecode(response.body);
+
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
         return {'status': true, 'data': decoded};
       } else {
-        return {'status': false, 'message': 'Gagal booking: ${response.statusCode}'};
+        // Mengambil pesan error dari Laravel jika ada (misal: jadwal bentrok)
+        String errorMessage = decoded['message'] ?? 'Gagal booking';
+        return {'status': false, 'message': errorMessage};
       }
     } catch (e) {
-      return {'status': false, 'message': 'Koneksi gagal: $e'};
+      return {'status': false, 'message': 'Terjadi kesalahan koneksi: $e'};
     }
   }
 
-  // 2. GET HISTORY (Untuk HistoryScreen)
+  /*
+  |--------------------------------------------------------------------------
+  | 2. GET HISTORY (Untuk HistoryScreen)
+  |--------------------------------------------------------------------------
+  */
   Future<List<dynamic>> getBookingHistory(int userId) async {
-    final url = Uri.parse('$baseUrl/bookings?user_id=$userId');
+    // Sesuai hasil route:list dan Postman tadi, rutenya adalah /bookings
+    final url = Uri.parse('$baseUrl/bookings'); 
 
     try {
       final response = await http.get(
         url,
-        headers: {'Accept': 'application/json'},
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-        // Pastikan key 'data' sesuai dengan JSON dari Laravel kamu
-        return decoded['data'] ?? [];
+        
+        // Laravel mengembalikan status: true dan data: [...]
+        if (decoded['status'] == true) {
+          return decoded['data'] ?? [];
+        }
+        return [];
       } else {
+        print("Server Error: ${response.statusCode}");
         return [];
       }
     } catch (e) {
-      print("Error Fetch History: $e");
+      print("Koneksi Gagal: $e");
       return [];
     }
   }
 }
+

@@ -31,12 +31,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
-          title: const Text("Riwayat Sewa", 
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          title: const Text(
+            "Riwayat Sewa",
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
           backgroundColor: Colors.white,
           elevation: 0,
           actions: [
-            IconButton(onPressed: _refreshData, icon: const Icon(Icons.refresh, color: Colors.black))
+            IconButton(
+              onPressed: _refreshData,
+              icon: const Icon(Icons.refresh, color: Colors.black),
+            ),
           ],
           bottom: const TabBar(
             labelColor: Color(0xFF00A32A),
@@ -59,12 +64,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
             }
 
             final allBookings = snapshot.data!;
-            
+
             // Filter Data Aktif vs Selesai (Logika Sederhana)
-            final activeBookings = allBookings.where((b) => 
-                b['status'] == 'Lunas' || b['status'] == 'DP').toList();
-            final finishedBookings = allBookings.where((b) => 
-                b['status'] != 'Lunas' && b['status'] != 'DP').toList();
+            final activeBookings = allBookings
+                .where(
+                  (b) =>
+                      b['status'] == 'pending' ||
+                      b['status'] == 'Lunas' ||
+                      b['status'] == 'DP',
+                )
+                .toList();
+
+            final finishedBookings = allBookings
+                .where(
+                  (b) => b['status'] == 'Selesai' || b['status'] == 'Batal',
+                )
+                .toList();
 
             return TabBarView(
               children: [
@@ -80,7 +95,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildList(List<dynamic> bookings, String emptyMessage) {
     if (bookings.isEmpty) {
-      return Center(child: Text(emptyMessage, style: const TextStyle(color: Colors.grey)));
+      return Center(
+        child: Text(emptyMessage, style: const TextStyle(color: Colors.grey)),
+      );
     }
 
     return RefreshIndicator(
@@ -90,9 +107,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         itemCount: bookings.length,
         itemBuilder: (context, index) {
           final b = bookings[index];
-          
+
           // Penentuan Warna Status
           Color statusColor = const Color(0xFF00A32A);
+          if (b['status'] == 'pending')
+            statusColor = Colors.orange; // Orange untuk menunggu
           if (b['status'] == 'Selesai') statusColor = Colors.grey;
           if (b['status'] == 'Batal') statusColor = Colors.red;
 
@@ -108,14 +127,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _historyCard(String title, String date, String time, String status, Color statusColor) {
+  Widget _historyCard(
+    String title,
+    String date,
+    String time,
+    String status,
+    Color statusColor,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,14 +150,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(status, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),

@@ -2,51 +2,92 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
-  // --- FUNGSI LOGIN GOOGLE DENGAN PEMILIHAN AKUN ---
-  Future<void> _handleGoogleSignIn(BuildContext context) async {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  // 1. Tambahkan Controller untuk menangkap input teks
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  // --- FUNGSI LOGIN MANUAL (PEMPERBAIKI BIANG KEROK) ---
+  Future<void> _handleLoginManual() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // Validasi input kosong
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar("Email dan Password tidak boleh kosong!", Colors.orange);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
     try {
-      // Inisialisasi GoogleSignIn
+      // TODO: Ganti bagian ini dengan panggil ApiService().login(email, password)
+      // Ini simulasi pengecekan ke database Laravel/VPS kamu
+      await Future.delayed(const Duration(seconds: 1)); // Simulasi loading network
+
+      if (email == "admin@gmail.com" && password == "admin123") {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } else {
+        _showSnackBar("Email atau Password salah!", Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar("Terjadi kesalahan: $e", Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // --- FUNGSI LOGIN GOOGLE ---
+  Future<void> _handleGoogleSignIn() async {
+    try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
 
-      // LOGIKA UTAMA: Logout dulu supaya jendela "Pilih Akun" selalu muncul
       if (await googleSignIn.isSignedIn()) {
         await googleSignIn.signOut();
       }
 
-      // 1. Trigger proses pilih akun Google
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      
-      if (googleUser == null) return; // User membatalkan login
+      if (googleUser == null) return;
 
-      // 2. Ambil detail autentikasi
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // 3. Buat kredensial untuk Firebase
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // 4. Sign in ke Firebase
       await FirebaseAuth.instance.signInWithCredential(credential);
 
-      // Jika berhasil, arahkan ke Home
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/home'); 
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Gagal Login Google: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar("Gagal Login Google: $e", Colors.red);
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
+  }
+
+  @override
+  void dispose() {
+    // Bersihkan controller saat screen ditutup
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -58,7 +99,6 @@ class LoginScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 80),
-            // Logo Utama
             const Icon(Icons.sports_soccer, size: 100, color: Color(0xFF1B5E20)),
             const Text(
               'SPORTS FIELD RENTAL',
@@ -71,16 +111,16 @@ class LoginScreen extends StatelessWidget {
             ),
             const SizedBox(height: 50),
 
-            // Input Fields
-            _inputField("Email / No. HP"),
+            // Input Fields dengan Controller
+            _inputField("Email / No. HP", _emailController),
             const SizedBox(height: 20),
-            _inputField("Masukkan Password", isPassword: true),
-            
+            _inputField("Masukkan Password", _passwordController, isPassword: true),
+
             const SizedBox(height: 30),
 
             // Tombol Login Manual
             ElevatedButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+              onPressed: _isLoading ? null : _handleLoginManual,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00A32A),
                 minimumSize: const Size(double.infinity, 50),
@@ -89,23 +129,22 @@ class LoginScreen extends StatelessWidget {
                 ),
                 elevation: 2,
               ),
-              child: const Text(
-                "LOGIN",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      "LOGIN",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
             ),
 
             const SizedBox(height: 25),
             const Text("atau", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
             const SizedBox(height: 25),
 
-            // Tombol Google (Logo Asli + Logika Pilih Akun)
-            _googleButton(context),
+            _googleButton(),
 
             const SizedBox(height: 40),
-
-            // Link Daftar
-            _buildRegisterLink(context),
+            _buildRegisterLink(),
             const SizedBox(height: 20),
           ],
         ),
@@ -113,7 +152,7 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _inputField(String label, {bool isPassword = false}) {
+  Widget _inputField(String label, TextEditingController controller, {bool isPassword = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -125,6 +164,7 @@ class LoginScreen extends StatelessWidget {
           ),
         ),
         TextField(
+          controller: controller, // Menghubungkan controller
           obscureText: isPassword,
           decoration: InputDecoration(
             filled: true,
@@ -144,9 +184,9 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _googleButton(BuildContext context) {
+  Widget _googleButton() {
     return OutlinedButton(
-      onPressed: () => _handleGoogleSignIn(context),
+      onPressed: _handleGoogleSignIn,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 50),
         side: BorderSide(color: Colors.grey.shade300),
@@ -158,31 +198,18 @@ class LoginScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            height: 22,
-            width: 22,
-            child: Image.network(
-              'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png', // URL lebih stabil
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.g_mobiledata, color: Colors.red);
-              },
-            ),
-          ),
+          Image.asset('assets/images/logo_google.png', height: 22),
           const SizedBox(width: 12),
           const Text(
             "Masuk Dengan Google",
-            style: TextStyle(
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRegisterLink(BuildContext context) {
+  Widget _buildRegisterLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -191,10 +218,7 @@ class LoginScreen extends StatelessWidget {
           onTap: () => Navigator.pushNamed(context, '/register'),
           child: const Text(
             "Daftar Sekarang",
-            style: TextStyle(
-              color: Color(0xFF00A32A),
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Color(0xFF00A32A), fontWeight: FontWeight.bold),
           ),
         ),
       ],
