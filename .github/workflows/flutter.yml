@@ -22,10 +22,6 @@ jobs:
         with:
           flutter-version: '3.41.7' 
 
-      - name: 🔍 Get SHA-1 for Firebase
-        run: |
-          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep -A 1 "SHA1"
-
       - name: 📦 Install Dependencies
         run: flutter pub get
 
@@ -35,6 +31,10 @@ jobs:
 
       - name: 🏗️ Build APK
         run: flutter build apk --release
+
+      - name: 🔍 Ambil SHA-1 Langsung Dari APK
+        run: |
+          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep "SHA1"
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
