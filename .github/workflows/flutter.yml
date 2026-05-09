@@ -23,7 +23,10 @@ jobs:
           flutter-version: '3.41.7' 
 
       - name: 🔍 Get SHA-1 for Firebase
-        run: cd android && ./gradlew signingReport
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew signingReport
 
       - name: 📦 Install Dependencies
         run: flutter pub get
