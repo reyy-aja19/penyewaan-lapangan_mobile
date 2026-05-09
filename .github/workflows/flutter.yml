@@ -24,9 +24,14 @@ jobs:
 
       - name: 🔍 Get SHA-1 for Firebase
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew signingReport | grep -A 3 "Variant: release" || ./gradlew signingReport
+          GRADLEW_PATH=$(find . -name gradlew | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "❌ Gradlew tidak ditemukan!"
+            exit 1
+          fi
+          echo "✅ Menemukan gradlew di: $GRADLEW_PATH"
+          chmod +x "$GRADLEW_PATH"
+          $GRADLEW_PATH -p $(dirname "$GRADLEW_PATH") signingReport
 
       - name: 📦 Install Dependencies
         run: flutter pub get
