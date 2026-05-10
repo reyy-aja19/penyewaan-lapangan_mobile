@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -9,18 +11,49 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  final ApiService _apiService = ApiService();
   late Future<List<dynamic>> _historyFuture;
 
   @override
   void initState() {
     super.initState();
-    _historyFuture = _apiService.getBookingHistory(1); // Sementara User ID 1
+    _historyFuture = _fetchBookingHistory(); // Panggil fungsi fetch data
+  }
+
+  // --- FUNGSI AMBIL DATA DARI API (PAKAI TOKEN) ---
+  Future<List<dynamic>> _fetchBookingHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.get(
+        Uri.parse('https://sportsfield.cicd.my.id/api/bookings'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // FIX DISINI: Kalau Laravel lo ngembaliin { "data": [...] }
+        if (data is Map && data.containsKey('data')) {
+          return data['data'] as List<dynamic>;
+        }
+
+        // Kalau Laravel lo langsung ngembaliin [...]
+        return data as List<dynamic>;
+      } else {
+        throw Exception("Gagal load data: ${response.statusCode}");
+      }
+    } catch (e) {
+      throw Exception("Koneksi Error: $e");
+    }
   }
 
   void _refreshData() {
     setState(() {
-      _historyFuture = _apiService.getBookingHistory(1);
+      _historyFuture = _fetchBookingHistory();
     });
   }
 
@@ -57,15 +90,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
           future: _historyFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF00A32A)),
+              );
             }
-            if (snapshot.hasError || !snapshot.hasData) {
-              return const Center(child: Text("Gagal memuat riwayat"));
+            if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text("Belum ada riwayat booking."));
             }
 
             final allBookings = snapshot.data!;
 
-            // Filter Data Aktif vs Selesai (Logika Sederhana)
+            // Filter Status
             final activeBookings = allBookings
                 .where(
                   (b) =>
@@ -108,15 +146,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         itemBuilder: (context, index) {
           final b = bookings[index];
 
-          // Penentuan Warna Status
+          // Logika Warna Status
           Color statusColor = const Color(0xFF00A32A);
-          if (b['status'] == 'pending')
-            statusColor = Colors.orange; // Orange untuk menunggu
-          if (b['status'] == 'Selesai') statusColor = Colors.grey;
+          if (b['status'] == 'pending') statusColor = Colors.orange;
           if (b['status'] == 'Batal') statusColor = Colors.red;
+          if (b['status'] == 'Selesai') statusColor = Colors.grey;
 
           return _historyCard(
-            b['lapangan']['nama_lapangan'] ?? "Lapangan",
+            b['lapangan']?['nama_lapangan'] ?? "Lapangan",
             b['booking_date'].toString().substring(0, 10),
             "${b['start_time']} - ${b['end_time']}",
             b['status'],
@@ -167,10 +204,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  status,
+                  status.toUpperCase(),
                   style: TextStyle(
                     color: statusColor,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -180,13 +217,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const Divider(height: 25),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+              const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
               const SizedBox(width: 8),
-              Text(date, style: const TextStyle(color: Colors.grey)),
+              Text(
+                date,
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+              ),
               const SizedBox(width: 20),
-              const Icon(Icons.access_time, size: 16, color: Colors.grey),
+              const Icon(Icons.access_time, size: 14, color: Colors.grey),
               const SizedBox(width: 8),
-              Text(time, style: const TextStyle(color: Colors.grey)),
+              Text(
+                time,
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+              ),
             ],
           ),
         ],

@@ -11,6 +11,7 @@ import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/point_screen.dart';
 import 'screens/match_screen.dart';
+import 'screens/success_auth_screen.dart';
 
 // Catatan: ScheduleScreen dan CheckoutScreen tidak di-import di sini 
 // karena sudah tidak dipakai di routing statis (MaterialApp routes).
@@ -53,6 +54,7 @@ class SportsFieldApp extends StatelessWidget {
         // karena sekarang menggunakan Navigator.push manual untuk kirim data.
         '/history': (context) => const HistoryScreen(),
         '/payment': (context) => const PaymentScreen(),
+        '/success_auth': (context) => const SuccessAuthScreen(),
       },
     );
   }

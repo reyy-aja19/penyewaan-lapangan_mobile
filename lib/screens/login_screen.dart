@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http; // Tambahkan ini
+import 'dart:convert'; // Tambahkan ini
+import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,17 +13,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // 1. Tambahkan Controller untuk menangkap input teks
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // --- FUNGSI LOGIN MANUAL (PEMPERBAIKI BIANG KEROK) ---
+  // --- FUNGSI LOGIN API LARAVEL ---
   Future<void> _handleLoginManual() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Validasi input kosong
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar("Email dan Password tidak boleh kosong!", Colors.orange);
       return;
@@ -29,29 +30,45 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Ganti bagian ini dengan panggil ApiService().login(email, password)
-      // Ini simulasi pengecekan ke database Laravel/VPS kamu
-      await Future.delayed(const Duration(seconds: 1)); // Simulasi loading network
+      // Hit API loginApi yang sudah dibuat di Laravel
+      final response = await http.post(
+        Uri.parse('https://sportsfield.cicd.my.id/api/login'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
 
-      if (email == "admin@gmail.com" && password == "admin123") {
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // 1. Simpan Token ke Local Storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', data['access_token']);
+        
+        // 2. Navigasi ke Home
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
-        _showSnackBar("Email atau Password salah!", Colors.red);
+        // Gagal login (email/pass salah)
+        _showSnackBar(data['message'] ?? "Email atau Password salah!", Colors.red);
       }
     } catch (e) {
-      _showSnackBar("Terjadi kesalahan: $e", Colors.red);
+      _showSnackBar("Gagal terhubung ke server: $e", Colors.red);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // --- FUNGSI LOGIN GOOGLE ---
+  // --- FUNGSI LOGIN GOOGLE (Tetap seperti semula) ---
   Future<void> _handleGoogleSignIn() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
-
       if (await googleSignIn.isSignedIn()) {
         await googleSignIn.signOut();
       }
@@ -84,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    // Bersihkan controller saat screen ditutup
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -111,14 +127,12 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 50),
 
-            // Input Fields dengan Controller
             _inputField("Email / No. HP", _emailController),
             const SizedBox(height: 20),
             _inputField("Masukkan Password", _passwordController, isPassword: true),
 
             const SizedBox(height: 30),
 
-            // Tombol Login Manual
             ElevatedButton(
               onPressed: _isLoading ? null : _handleLoginManual,
               style: ElevatedButton.styleFrom(
@@ -130,7 +144,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 elevation: 2,
               ),
               child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
                   : const Text(
                       "LOGIN",
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -164,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         TextField(
-          controller: controller, // Menghubungkan controller
+          controller: controller,
           obscureText: isPassword,
           decoration: InputDecoration(
             filled: true,
@@ -186,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _googleButton() {
     return OutlinedButton(
-      onPressed: _handleGoogleSignIn,
+      onPressed: _isLoading ? null : _handleGoogleSignIn,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 50),
         side: BorderSide(color: Colors.grey.shade300),
@@ -198,7 +216,8 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/images/logo_google.png', height: 22),
+          // Pastikan file ini ada di pubspec.yaml atau ganti dengan Icon Google
+          const Icon(Icons.g_mobiledata, color: Colors.red, size: 30),
           const SizedBox(width: 12),
           const Text(
             "Masuk Dengan Google",
