@@ -113,6 +113,7 @@ class DetailScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ScheduleScreen(
+                          id: field.id, // Pastikan FieldModel punya id
                           namaLapangan: field.name,
                           hargaLapangan: "Rp ${field.price}",
                         ),

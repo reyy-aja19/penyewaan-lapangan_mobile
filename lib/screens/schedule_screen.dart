@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Import ini untuk format tanggal
+import 'package:intl/intl.dart';
+import 'package:penyewaan_lapangan/services/api_service.dart';
 import 'checkout_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
+  final int id;
   final String namaLapangan;
   final String hargaLapangan;
 
   const ScheduleScreen({
-    super.key, 
-    required this.namaLapangan, 
+    super.key,
+    required this.id,
+    required this.namaLapangan,
     required this.hargaLapangan,
   });
 
@@ -17,34 +20,81 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
+  // Jam yang tersedia di UI
   final List<String> _timeSlots = [
-    "08:00", "09:00", "10:00", "11:00", "13:00", 
-    "14:00", "15:00", "16:00", "19:00", "20:00", "21:00"
+    "08:00",
+    "09:00",
+    "10:00",
+    "11:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "19:00",
+    "20:00",
+    "21:00",
   ];
 
   List<String> _selectedTimes = [];
+  List<String> _bookedSlots = []; // Jam yang bakal diwarnain merah
+  bool _isLoadingSlots = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookedSlots();
+  }
+
+  // Fungsi ambil data jam dari Laravel
+  Future<void> _fetchBookedSlots() async {
+    if (!mounted) return;
+    setState(() => _isLoadingSlots = true);
+
+    try {
+      // Ambil tanggal hari ini (Samain formatnya sama Laravel lo)
+      String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      final apiService = ApiService();
+      final data = await apiService.getBookedSlots(widget.id, today);
+
+      print("DEBUG: Jam terisi dari API -> $data");
+
+      if (mounted) {
+        setState(() {
+          _bookedSlots = data;
+          _isLoadingSlots = false;
+        });
+      }
+    } catch (e) {
+      print("DEBUG: Error fetch slots -> $e");
+      if (mounted) {
+        setState(() => _isLoadingSlots = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // --- LOGIKA TANGGAL REAL-TIME ---
     DateTime now = DateTime.now();
-    
-    // Format untuk dikirim ke API Laravel (YYYY-MM-DD) -> "2026-05-08"
     String tanggalUntukAPI = DateFormat('yyyy-MM-dd').format(now);
-    
-    // Format untuk tampilan di UI (contoh: "08 May 2026")
     String tanggalTampilan = DateFormat('dd MMMM yyyy').format(now);
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          "Pilih Jadwal", 
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+          "Pilih Jadwal",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         leading: const BackButton(color: Colors.black),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: _fetchBookedSlots,
+            icon: const Icon(Icons.refresh, color: Color(0xFF00A32A)),
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,8 +109,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Text("Tanggal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            child: Text(
+              "Tanggal",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
           ),
+
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(15),
@@ -74,8 +128,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 const Icon(Icons.calendar_today, color: Color(0xFF00A32A)),
                 const SizedBox(width: 15),
                 Text(
-                  tanggalTampilan, 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                  tanggalTampilan,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
@@ -83,99 +140,126 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Text("Pilih Jam", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            child: Text(
+              "Pilih Jam",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
           ),
 
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemCount: _timeSlots.length,
-              itemBuilder: (context, index) {
-                String time = _timeSlots[index];
-                bool isSelected = _selectedTimes.contains(time);
+            child: _isLoadingSlots
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF00A32A)),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 2.5,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                    itemCount: _timeSlots.length,
+                    // Di dalam GridView.builder
+                    itemBuilder: (context, index) {
+                      String time = _timeSlots[index];
+                      bool isBooked = _bookedSlots.contains(
+                        time,
+                      ); // Mencari "08:00" di dalam ["08:00", "09:00"]
+                      bool isSelected = _selectedTimes.contains(time);
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedTimes.remove(time);
-                      } else {
-                        if (_selectedTimes.length < 2) {
-                          _selectedTimes.add(time);
-                          _selectedTimes.sort(); 
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Cukup 2 jam saja, jangan maruk Bujang!"),
-                              duration: Duration(seconds: 1),
-                              backgroundColor: Colors.redAccent,
+                      return GestureDetector(
+                        onTap: isBooked
+                            ? null
+                            : () {
+                                setState(() {
+                                  if (isSelected) {
+                                    _selectedTimes.remove(time);
+                                  } else {
+                                    if (_selectedTimes.length < 2) {
+                                      _selectedTimes.add(time);
+                                      _selectedTimes.sort();
+                                    }
+                                  }
+                                });
+                              },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isBooked
+                                ? Colors.red.shade400
+                                : (isSelected
+                                      ? const Color(0xFF00A32A)
+                                      : Colors.white),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isBooked
+                                  ? Colors.red.shade400
+                                  : Colors.grey.shade300,
                             ),
-                          );
-                        }
-                      }
-                    });
-                  },
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF00A32A) : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF00A32A) : Colors.grey.shade300
-                      ),
-                    ),
-                    child: Text(
-                      time,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold
-                      ),
-                    ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              time,
+                              style: TextStyle(
+                                color: (isBooked || isSelected)
+                                    ? Colors.white
+                                    : Colors.black,
+                                decoration: isBooked
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
 
           Container(
             padding: const EdgeInsets.all(20),
             child: ElevatedButton(
-              onPressed: _selectedTimes.isEmpty 
-                ? null 
-                : () {
-                    int hargaSatuan = int.parse(widget.hargaLapangan.replaceAll(RegExp(r'[^0-9]'), ''));
-                    int totalHarga = hargaSatuan * _selectedTimes.length;
-                    
-                    String hargaFinal = "Rp ${totalHarga.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+              onPressed: _selectedTimes.isEmpty
+                  ? null
+                  : () {
+                      int hargaSatuan = int.parse(
+                        widget.hargaLapangan.replaceAll(RegExp(r'[^0-9]'), ''),
+                      );
+                      int totalHarga = hargaSatuan * _selectedTimes.length;
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CheckoutScreen(
-                          namaLapangan: widget.namaLapangan,
-                          tanggal: tanggalUntukAPI, // Mengirim tanggal hari ini
-                          jam: _selectedTimes.join(", "), 
-                          harga: hargaFinal,
+                      String hargaFinal =
+                          "Rp ${totalHarga.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CheckoutScreen(
+                            lapanganId: widget.id,
+                            namaLapangan: widget.namaLapangan,
+                            tanggal: tanggalUntukAPI,
+                            jam: _selectedTimes.join(", "),
+                            harga: hargaFinal,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00A32A),
                 minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
               ),
               child: Text(
-                _selectedTimes.isEmpty 
-                    ? "Pilih Jam" 
-                    : "Konfirmasi ${_selectedTimes.length} Jam", 
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)
+                _selectedTimes.isEmpty
+                    ? "Pilih Jam"
+                    : "Konfirmasi ${_selectedTimes.length} Jam",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

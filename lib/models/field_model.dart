@@ -1,5 +1,5 @@
 class FieldModel {
-  final String id;
+  final int id;
   final String name;
   final String type;
   final int price;
@@ -19,10 +19,10 @@ class FieldModel {
 
   factory FieldModel.fromJson(Map<String, dynamic> json) {
   // Ganti IP dengan IP Laptop/Server Laravelmu yang benar
-  String baseUrl = "http://192.168.1.15:8000/"; 
+  String baseUrl = "https://sportsfield.cicd.my.id/"; 
 
   return FieldModel(
-    id: json['id']?.toString() ?? '',
+    id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
     name: json['nama'] ?? 'Tanpa Nama',
     type: json['jenis'] ?? 'Umum',
     price: (json['harga'] as num?)?.toInt() ?? 0,

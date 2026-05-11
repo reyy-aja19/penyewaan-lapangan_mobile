@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart'; // WAJIB ADA
 
 class ApiService {
-  // Base URL VPS kamu
   static const String baseUrl = "https://sportsfield.cicd.my.id/api";
 
   /*
@@ -21,6 +21,8 @@ class ApiService {
     required int hours,
   }) async {
     final url = Uri.parse('$baseUrl/booking');
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token'); // Ambil token login
 
     try {
       final response = await http.post(
@@ -28,6 +30,7 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': 'Bearer $token', // SURAT IZIN MASUK
         },
         body: jsonEncode({
           'user_id': userId,
@@ -45,8 +48,9 @@ class ApiService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         return {'status': true, 'data': decoded};
+      } else if (response.statusCode == 401) {
+        return {'status': false, 'message': 'Sesi habis, silakan login ulang'};
       } else {
-        // Mengambil pesan error dari Laravel jika ada (misal: jadwal bentrok)
         String errorMessage = decoded['message'] ?? 'Gagal booking';
         return {'status': false, 'message': errorMessage};
       }
@@ -61,8 +65,9 @@ class ApiService {
   |--------------------------------------------------------------------------
   */
   Future<List<dynamic>> getBookingHistory(int userId) async {
-    // Sesuai hasil route:list dan Postman tadi, rutenya adalah /bookings
-    final url = Uri.parse('$baseUrl/bookings'); 
+    final url = Uri.parse('$baseUrl/bookings');
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token'); // Ambil token login
 
     try {
       final response = await http.get(
@@ -70,13 +75,12 @@ class ApiService {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // SURAT IZIN MASUK
         },
       );
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-        
-        // Laravel mengembalikan status: true dan data: [...]
         if (decoded['status'] == true) {
           return decoded['data'] ?? [];
         }
@@ -90,5 +94,44 @@ class ApiService {
       return [];
     }
   }
-}
 
+  /*
+  |--------------------------------------------------------------------------
+  | 3. GET BOOKED SLOTS (Untuk Warnain Jam Merah)
+  |--------------------------------------------------------------------------
+  */
+  Future<List<String>> getBookedSlots(int lapanganId, String tanggal) async {
+    // Pastikan URL-nya sesuai dengan route yang lo bikin di Laravel
+    final url = Uri.parse(
+      '$baseUrl/booked-slots?lapangan_id=$lapanganId&tanggal=$tanggal',
+    );
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded['status'] == true) {
+          List data = decoded['data'];
+          // Kita ambil start_time saja, dan potong jadi "HH:mm" (misal: 08:00:00 jadi 08:00)
+          return data.map((e) {
+            String time = e['start_time'].toString();
+            return time.length >= 5 ? time.substring(0, 5) : time;
+          }).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print("Error ambil jadwal: $e");
+      return [];
+    }
+  }
+}

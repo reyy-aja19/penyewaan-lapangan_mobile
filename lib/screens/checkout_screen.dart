@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:penyewaan_lapangan/services/api_service.dart'; // Sesuaikan dengan nama project kamu
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:penyewaan_lapangan/services/api_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
+  final int lapanganId;
   final String namaLapangan;
   final String tanggal;
   final String jam;
@@ -9,6 +12,7 @@ class CheckoutScreen extends StatefulWidget {
 
   const CheckoutScreen({
     super.key,
+    required this.lapanganId,
     required this.namaLapangan,
     required this.tanggal,
     required this.jam,
@@ -21,49 +25,71 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String _selectedMethod = "Transfer Bank (VA)";
-  bool _isLoading = false; // Status loading untuk tombol
+  bool _isLoading = false;
 
-  // Fungsi untuk memproses pembayaran dan hit API ke Laravel
   Future<void> _handlePayment() async {
     setState(() => _isLoading = true);
 
     final apiService = ApiService();
+    final prefs = await SharedPreferences.getInstance();
 
-    // Membersihkan string harga (contoh: "Rp 150.000" menjadi 150000.0)
+    final String? userRaw = prefs.getString('user');
+    int userId = 0;
+    if (userRaw != null) {
+      userId = jsonDecode(userRaw)['id'] ?? 0;
+    }
+
+    // Bersihkan harga: Rp 180.000 -> 180000
     double cleanPrice =
         double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
-    // Memecah jam (contoh: "08:00 - 09:00" menjadi start: 08:00 dan end: 09:00)
-    List<String> timeParts = widget.jam.split(' - ');
-    String startTime = timeParts.isNotEmpty ? timeParts[0] : widget.jam;
-    String endTime = timeParts.length > 1 ? timeParts[1] : widget.jam;
+    // --- DEBUGGING LOG ---
+    print("--- DEBUG CHECKOUT ---");
+    print("Lapangan ID: ${widget.lapanganId}");
+    print("Tanggal: ${widget.tanggal}");
+    print("Jam (Raw): ${widget.jam}");
+    print("Total Harga: $cleanPrice");
+    print("----------------------");
 
-    int duration = 1;
-
-    final result = await apiService.postBooking(
-      userId: 1, // Ganti dengan ID user yang sedang login
-      lapanganId: 1, // Ganti dengan ID lapangan yang dipilih
-      paymentMethod: _selectedMethod,
-      date: widget.tanggal,
-      startTime: startTime,
-      endTime: endTime,
-      totalPrice: cleanPrice,
-      hours: duration,
-    );
-
-    setState(() => _isLoading = false);
-
-    if (result['status'] == true) {
-      _showSuccessDialog(context);
-    } else {
-      // Tampilkan pesan error jika validasi gagal atau server bermasalah
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Gagal: ${result['message']}"),
-          backgroundColor: Colors.red,
-        ),
+    try {
+      // KIRIM JAM APA ADANYA ("08:00, 09:00")
+      // Laravel lo butuh string ini utuh buat di-explode
+      final result = await apiService.postBooking(
+        userId: userId,
+        lapanganId: widget.lapanganId,
+        paymentMethod: _selectedMethod,
+        date: widget.tanggal,
+        startTime: widget.jam, // Jangan di-split di sini, kirim utuh!
+        endTime: "", // Laravel bakal hitung otomatis per jam
+        totalPrice: cleanPrice,
+        hours: widget.jam.split(',').length,
       );
+
+      if (result['status'] == true) {
+        // Update poin di memori lokal (opsional kalau lo mau lgsg refresh dari API)
+        if (userRaw != null) {
+          Map<String, dynamic> userData = jsonDecode(userRaw);
+          // Ambil poin terbaru dari response API jika ada, atau tambah manual +5
+          userData['points'] = result['current_points'] ?? (userData['points'] ?? 0) + 5;
+          await prefs.setString('user', jsonEncode(userData));
+        }
+
+        if (mounted) _showSuccessDialog(context);
+      } else {
+        _showSnackBar("Gagal: ${result['message']}", Colors.red);
+      }
+    } catch (e) {
+      print("Error Payment: $e");
+      _showSnackBar("Koneksi Error!", Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
   }
 
   @override
@@ -120,10 +146,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 15),
             _buildMethodOption("Transfer Bank (VA)", Icons.account_balance),
-            _buildMethodOption(
-              "E-Wallet (Dana/OVO)",
-              Icons.account_balance_wallet,
-            ),
+            _buildMethodOption("E-Wallet (Dana/OVO)", Icons.account_balance_wallet),
             _buildMethodOption("Tunai di Tempat", Icons.payments_outlined),
           ],
         ),
@@ -145,19 +168,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             color: isSelected ? const Color(0xFF00A32A) : Colors.transparent,
             width: 2,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: ListTile(
-          leading: Icon(
-            icon,
-            color: isSelected ? const Color(0xFF00A32A) : Colors.grey,
-          ),
+          leading: Icon(icon, color: isSelected ? const Color(0xFF00A32A) : Colors.grey),
           title: Text(
             title,
             style: TextStyle(
@@ -197,35 +210,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _buildPayButton(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
-      ),
+      color: Colors.white,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handlePayment,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00A32A),
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
         child: _isLoading
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               )
             : Text(
                 "Bayar dengan $_selectedMethod",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -240,7 +241,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 20),
             const Icon(Icons.check_circle, color: Color(0xFF00A32A), size: 80),
             const SizedBox(height: 20),
             const Text(
@@ -248,27 +248,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 10),
-            Text(
-              "Berhasil membayar menggunakan $_selectedMethod. Silakan tunjukkan kode booking saat tiba di lokasi.",
+            const Text(
+              "Poin kamu bertambah +5!",
+              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              "Silakan tunjukkan kode booking saat tiba.",
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 25),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.popUntil(context, (route) => route.isFirst),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A32A),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  "Kembali ke Beranda",
-                  style: TextStyle(color: Colors.white),
-                ),
+                onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A32A)),
+                child: const Text("Kembali ke Beranda", style: TextStyle(color: Colors.white)),
               ),
             ),
           ],

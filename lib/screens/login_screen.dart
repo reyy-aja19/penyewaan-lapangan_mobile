@@ -46,9 +46,17 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // 1. Simpan Token ke Local Storage
+        // 1. Simpan Token dan Data User ke SharedPreferences
         final prefs = await SharedPreferences.getInstance();
+        
+        // Simpan token untuk otentikasi API
         await prefs.setString('token', data['access_token']);
+        
+        // SIMPAN DATA USER (PENTING: Biar userId di Checkout gak invalid)
+        // Pastikan di API Laravel lo, 'user' dikirim di dalam response
+        if (data['user'] != null) {
+          await prefs.setString('user', jsonEncode(data['user']));
+        }
         
         // 2. Navigasi ke Home
         if (mounted) {
