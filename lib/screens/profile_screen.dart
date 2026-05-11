@@ -68,7 +68,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           title: const Text("Konfirmasi Keluar"),
           content: const Text("Apakah Anda yakin ingin keluar?"),
           actions: [
@@ -78,7 +80,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             TextButton(
               onPressed: _handleLogout,
-              child: const Text("Ya, Keluar", style: TextStyle(color: Colors.red)),
+              child: const Text(
+                "Ya, Keluar",
+                style: TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
@@ -87,9 +92,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -97,13 +102,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text("Profil Saya", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Profil Saya",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF00A32A)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00A32A)),
+            )
           : SingleChildScrollView(
               child: Column(
                 children: [
@@ -123,12 +133,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const CircleAvatar(
                           radius: 50,
                           backgroundColor: Color(0xFF00A32A),
-                          child: Icon(Icons.person, size: 60, color: Colors.white),
+                          child: Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(height: 15),
                         Text(
                           userData?['name'] ?? "User Sporty",
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           userData?['email'] ?? "user@gmail.com",
@@ -137,14 +154,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 5),
                         // Menampilkan poin user dari DB
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.orange.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             "Poin: ${userData?['points'] ?? 0}",
-                            style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -158,31 +181,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Informasi Akun", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const Text(
+                          "Informasi Akun",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
                         const SizedBox(height: 10),
-                        _infoTile(Icons.phone, "Nomor HP", userData?['phone'] ?? "-"),
-                        _infoTile(Icons.verified_user, "Role", userData?['role']?.toUpperCase() ?? "USER"),
-                        
+                        _infoTile(
+                          Icons.phone,
+                          "Nomor HP",
+                          userData?['phone'] ?? "-",
+                        ),
+                        _infoTile(
+                          Icons.verified_user,
+                          "Role",
+                          userData?['role']?.toUpperCase() ?? "USER",
+                        ),
+
                         const SizedBox(height: 20),
-                        const Text("Menu", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const Text(
+                          "Menu",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _buildMenuItem(Icons.history, "Riwayat Transaksi", () {
                           Navigator.pushNamed(context, '/history');
                         }),
-                        _buildMenuItem(Icons.help_outline, "Pusat Bantuan", () {}),
-                        
+                        _buildMenuItem(
+                          Icons.help_outline,
+                          "Pusat Bantuan",
+                          () {},
+                        ),
+
                         const SizedBox(height: 30),
-                        
+
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: () => _showLogoutDialog(context),
                             icon: const Icon(Icons.logout, color: Colors.red),
-                            label: const Text("Keluar Akun", style: TextStyle(color: Colors.red)),
+                            label: const Text(
+                              "Keluar Akun",
+                              style: TextStyle(color: Colors.red),
+                            ),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.red),
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
@@ -199,8 +251,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _infoTile(IconData icon, String label, String value) {
     return ListTile(
       leading: Icon(icon, color: Colors.grey),
-      title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+      title: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      ),
+      subtitle: Text(
+        value,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
     );
   }
 
@@ -213,7 +275,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: onTap,
         leading: Icon(icon, color: const Color(0xFF00A32A)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey,
+        ),
       ),
     );
   }

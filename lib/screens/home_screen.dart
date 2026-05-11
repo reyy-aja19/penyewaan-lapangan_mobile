@@ -69,20 +69,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildHeader(),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  child: Text("Kategori Olahraga",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  child: Text(
+                    "Kategori Olahraga",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
                 ),
                 _buildCategories(),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Text("Venue Pilihan Untukmu",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  child: Text(
+                    "Venue Pilihan Untukmu",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
                 ),
                 _buildHorizontalList(context, dataFields),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  child: Text("Rekomendasi Terdekat",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  child: Text(
+                    "Rekomendasi Terdekat",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
                 ),
                 _buildVerticalList(dataFields),
               ],
@@ -116,9 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => DetailScreen(field: field),
-          ),
+          MaterialPageRoute(builder: (context) => DetailScreen(field: field)),
         ),
         child: Container(
           decoration: BoxDecoration(
@@ -129,28 +133,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.black.withOpacity(0.06),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
-              )
+              ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // KODE BARU (Benar untuk SVG)
-ClipRRect(
-  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-  child: SvgPicture.network(
-    field.imageUrl ?? '', // Path SVG lengkap (misal: http://192.168.1.15:8000/uploads/...)
-    height: 120,
-    width: double.infinity,
-    fit: BoxFit.cover,
-    // Placeholder jika gambar loading atau error
-    placeholderBuilder: (BuildContext context) => Container(
-        height: 120, 
-        color: Colors.grey[200], 
-        child: const Center(child: CircularProgressIndicator())
-    ),
-  ),
-),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+                child: SvgPicture.network(
+                  field.imageUrl ??
+                      '', // Path SVG lengkap (misal: http://192.168.1.15:8000/uploads/...)
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  // Placeholder jika gambar loading atau error
+                  placeholderBuilder: (BuildContext context) => Container(
+                    height: 120,
+                    color: Colors.grey[200],
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -158,13 +165,18 @@ ClipRRect(
                   children: [
                     Text(
                       field.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    const Text("Tersedia",
-                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                    const Text(
+                      "Tersedia",
+                      style: TextStyle(color: Colors.grey, fontSize: 11),
+                    ),
                     const SizedBox(height: 10),
                     Text(
                       "Rp ${field.price} / jam",
@@ -194,7 +206,9 @@ ClipRRect(
 
         return Card(
           margin: const EdgeInsets.only(bottom: 15),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           child: ListTile(
             leading: ClipRRect(
               borderRadius: BorderRadius.circular(10),
@@ -211,8 +225,10 @@ ClipRRect(
                 ),
               ),
             ),
-            title: Text(field.name,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              field.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text("${field.type} | Rp ${field.price}"),
             trailing: const Icon(Icons.arrow_forward_ios, size: 14),
             onTap: () => Navigator.push(
@@ -245,11 +261,17 @@ ClipRRect(
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Lokasi Kamu",
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text("📍 Indramayu, ID",
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Lokasi Kamu",
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    "📍 Indramayu, ID",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               GestureDetector(

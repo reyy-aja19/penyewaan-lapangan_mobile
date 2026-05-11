@@ -64,8 +64,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '844099394384',
     projectId: 'penyewaan-lapangan-64a01',
     storageBucket: 'penyewaan-lapangan-64a01.firebasestorage.app',
-    androidClientId: '844099394384-3ta3p6ve22cq5784nkn1neipq6rft0r2.apps.googleusercontent.com',
-    iosClientId: '844099394384-bdqskphuvssj89b9kkbhe9iguef611lu.apps.googleusercontent.com',
+    androidClientId:
+        '844099394384-3ta3p6ve22cq5784nkn1neipq6rft0r2.apps.googleusercontent.com',
+    iosClientId:
+        '844099394384-bdqskphuvssj89b9kkbhe9iguef611lu.apps.googleusercontent.com',
     iosBundleId: 'com.example.penyewaanLapangan',
   );
 
@@ -75,8 +77,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '844099394384',
     projectId: 'penyewaan-lapangan-64a01',
     storageBucket: 'penyewaan-lapangan-64a01.firebasestorage.app',
-    androidClientId: '844099394384-3ta3p6ve22cq5784nkn1neipq6rft0r2.apps.googleusercontent.com',
-    iosClientId: '844099394384-bdqskphuvssj89b9kkbhe9iguef611lu.apps.googleusercontent.com',
+    androidClientId:
+        '844099394384-3ta3p6ve22cq5784nkn1neipq6rft0r2.apps.googleusercontent.com',
+    iosClientId:
+        '844099394384-bdqskphuvssj89b9kkbhe9iguef611lu.apps.googleusercontent.com',
     iosBundleId: 'com.example.penyewaanLapangan',
   );
 
@@ -89,5 +93,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'penyewaan-lapangan-64a01.firebasestorage.app',
     measurementId: 'G-8WMVRD0LTM',
   );
-
 }

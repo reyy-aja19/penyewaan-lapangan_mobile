@@ -13,17 +13,15 @@ import 'screens/point_screen.dart';
 import 'screens/match_screen.dart';
 import 'screens/success_auth_screen.dart';
 
-// Catatan: ScheduleScreen dan CheckoutScreen tidak di-import di sini 
+// Catatan: ScheduleScreen dan CheckoutScreen tidak di-import di sini
 // karena sudah tidak dipakai di routing statis (MaterialApp routes).
 
 void main() async {
   // Wajib tambahin ini kalau pakai async di main
-  WidgetsFlutterBinding.ensureInitialized(); 
-  
+  WidgetsFlutterBinding.ensureInitialized();
+
   // Inisialisasi Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const SportsFieldApp());
 }
@@ -50,7 +48,7 @@ class SportsFieldApp extends StatelessWidget {
         '/': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const MainNavigation(),
-        // REVISI: Route /schedule dan /checkout dihapus dari sini 
+        // REVISI: Route /schedule dan /checkout dihapus dari sini
         // karena sekarang menggunakan Navigator.push manual untuk kirim data.
         '/history': (context) => const HistoryScreen(),
         '/payment': (context) => const PaymentScreen(),
@@ -89,10 +87,7 @@ class _MainNavigationState extends State<MainNavigation> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
         onTap: (val) {
@@ -108,27 +103,27 @@ class _MainNavigationState extends State<MainNavigation> {
         unselectedFontSize: 12,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined), 
+            icon: Icon(Icons.calendar_month_outlined),
             activeIcon: Icon(Icons.calendar_month),
             label: 'Booking',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.monetization_on_outlined), 
+            icon: Icon(Icons.monetization_on_outlined),
             activeIcon: Icon(Icons.monetization_on),
             label: 'Poin',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined), 
+            icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.sports_tennis_outlined), 
+            icon: Icon(Icons.sports_tennis_outlined),
             activeIcon: Icon(Icons.sports_tennis),
             label: 'Match',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline), 
+            icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profil',
           ),

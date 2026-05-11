@@ -18,22 +18,20 @@ class FieldModel {
   });
 
   factory FieldModel.fromJson(Map<String, dynamic> json) {
-  // Ganti IP dengan IP Laptop/Server Laravelmu yang benar
-  String baseUrl = "https://sportsfield.cicd.my.id/"; 
+    // Ganti IP dengan IP Laptop/Server Laravelmu yang benar
+    String baseUrl = "https://sportsfield.cicd.my.id/";
 
-  return FieldModel(
-    id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-    name: json['nama'] ?? 'Tanpa Nama',
-    type: json['jenis'] ?? 'Umum',
-    price: (json['harga'] as num?)?.toInt() ?? 0,
-    
-    // Gabungkan baseUrl dengan path 'foto' dari JSON
-    imageUrl: json['foto'] != null 
-        ? baseUrl + json['foto'] 
-        : null, 
+    return FieldModel(
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      name: json['nama'] ?? 'Tanpa Nama',
+      type: json['jenis'] ?? 'Umum',
+      price: (json['harga'] as num?)?.toInt() ?? 0,
 
-    description: json['deskripsi'] ?? 'Tidak ada deskripsi',
-    status: json['status'] ?? 'available',
-  );
-}
+      // Gabungkan baseUrl dengan path 'foto' dari JSON
+      imageUrl: json['foto'] != null ? baseUrl + json['foto'] : null,
+
+      description: json['deskripsi'] ?? 'Tidak ada deskripsi',
+      status: json['status'] ?? 'available',
+    );
+  }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:penyewaan_lapangan/models/field_model.dart'; // Pastikan path import benar
-import 'schedule_screen.dart'; 
+import 'schedule_screen.dart';
 
 class DetailScreen extends StatelessWidget {
   // SEKARANG: Menggunakan FieldModel, bukan Map lagi
@@ -19,37 +19,40 @@ class DetailScreen extends StatelessWidget {
           Stack(
             children: [
               SizedBox(
-                height: 250, 
+                height: 250,
                 width: double.infinity,
                 child: Image.network(
                   field.imageUrl ?? "", // Menggunakan properti dari FieldModel
                   fit: BoxFit.cover,
                   errorBuilder: (context, e, s) => Container(
-                    color: Colors.blueGrey[200], 
-                    child: const Icon(Icons.image, size: 50)
+                    color: Colors.blueGrey[200],
+                    child: const Icon(Icons.image, size: 50),
                   ),
                 ),
               ),
               Positioned(
-                top: 40, 
-                left: 15, 
+                top: 40,
+                left: 15,
                 child: CircleAvatar(
-                  backgroundColor: Colors.white, 
-                  child: const BackButton(color: Colors.black)
-                )
+                  backgroundColor: Colors.white,
+                  child: const BackButton(color: Colors.black),
+                ),
               ),
               Positioned(
-                bottom: 10, 
-                right: 15, 
+                bottom: 10,
+                right: 15,
                 child: Container(
-                  padding: const EdgeInsets.all(5), 
-                  color: Colors.black54, 
-                  child: const Text("1/3", style: TextStyle(color: Colors.white, fontSize: 12))
-                )
+                  padding: const EdgeInsets.all(5),
+                  color: Colors.black54,
+                  child: const Text(
+                    "1/3",
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
               ),
             ],
           ),
-          
+
           // --- INFO TEKS ---
           Padding(
             padding: const EdgeInsets.all(20),
@@ -58,39 +61,53 @@ class DetailScreen extends StatelessWidget {
               children: [
                 Text(
                   field.name, // Menggunakan field.name
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 5),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 20),
                     // Catatan: Jika FieldModel belum ada rating, bisa hardcode dulu atau tambah ke model
-                    const Text(" 4.5 Rating • Kab. Indramayu") 
+                    const Text(" 4.5 Rating • Kab. Indramayu"),
                   ],
                 ),
                 const Divider(height: 30),
-                const Text("Fasilitas", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  "Fasilitas",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 10),
-                const Text("🚲 parkir mobil/motor      🥤 jual minuman\n🚽 toilet               🍔 jual makanan\n🎾 jual peralatan olahraga"),
+                const Text(
+                  "🚲 parkir mobil/motor      🥤 jual minuman\n🚽 toilet               🍔 jual makanan\n🎾 jual peralatan olahraga",
+                ),
                 const SizedBox(height: 20),
-                const Text("Deskripsi", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  "Deskripsi",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 5),
                 Text(
-                  field.description ?? "Tidak ada deskripsi untuk lapangan ini.",
+                  field.description ??
+                      "Tidak ada deskripsi untuk lapangan ini.",
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // --- BOTTOM BAR ---
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey.shade300, width: 0.5))
+              border: Border(
+                top: BorderSide(color: Colors.grey.shade300, width: 0.5),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -99,11 +116,18 @@ class DetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text("Mulai dari", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text(
+                      "Mulai dari",
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
                     Text(
                       "Rp ${field.price}", // Menggunakan field.price
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF00A32A))
-                    )
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Color(0xFF00A32A),
+                      ),
+                    ),
                   ],
                 ),
                 ElevatedButton(
@@ -121,15 +145,26 @@ class DetailScreen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black, 
-                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  child: const Text("Pilih Jadwal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                )
+                  child: const Text(
+                    "Pilih Jadwal",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

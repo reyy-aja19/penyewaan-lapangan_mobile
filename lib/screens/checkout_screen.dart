@@ -70,7 +70,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (userRaw != null) {
           Map<String, dynamic> userData = jsonDecode(userRaw);
           // Ambil poin terbaru dari response API jika ada, atau tambah manual +5
-          userData['points'] = result['current_points'] ?? (userData['points'] ?? 0) + 5;
+          userData['points'] =
+              result['current_points'] ?? (userData['points'] ?? 0) + 5;
           await prefs.setString('user', jsonEncode(userData));
         }
 
@@ -87,9 +88,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -146,7 +147,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 15),
             _buildMethodOption("Transfer Bank (VA)", Icons.account_balance),
-            _buildMethodOption("E-Wallet (Dana/OVO)", Icons.account_balance_wallet),
+            _buildMethodOption(
+              "E-Wallet (Dana/OVO)",
+              Icons.account_balance_wallet,
+            ),
             _buildMethodOption("Tunai di Tempat", Icons.payments_outlined),
           ],
         ),
@@ -170,7 +174,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ),
         child: ListTile(
-          leading: Icon(icon, color: isSelected ? const Color(0xFF00A32A) : Colors.grey),
+          leading: Icon(
+            icon,
+            color: isSelected ? const Color(0xFF00A32A) : Colors.grey,
+          ),
           title: Text(
             title,
             style: TextStyle(
@@ -216,17 +223,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00A32A),
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
         child: _isLoading
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               )
             : Text(
                 "Bayar dengan $_selectedMethod",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
       ),
     );
@@ -250,7 +265,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 10),
             const Text(
               "Poin kamu bertambah +5!",
-              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 10),
             const Text(
@@ -262,9 +280,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A32A)),
-                child: const Text("Kembali ke Beranda", style: TextStyle(color: Colors.white)),
+                onPressed: () =>
+                    Navigator.popUntil(context, (route) => route.isFirst),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00A32A),
+                ),
+                child: const Text(
+                  "Kembali ke Beranda",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],

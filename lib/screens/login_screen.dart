@@ -37,10 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       final data = jsonDecode(response.body);
@@ -48,23 +45,26 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         // 1. Simpan Token dan Data User ke SharedPreferences
         final prefs = await SharedPreferences.getInstance();
-        
+
         // Simpan token untuk otentikasi API
         await prefs.setString('token', data['access_token']);
-        
+
         // SIMPAN DATA USER (PENTING: Biar userId di Checkout gak invalid)
         // Pastikan di API Laravel lo, 'user' dikirim di dalam response
         if (data['user'] != null) {
           await prefs.setString('user', jsonEncode(data['user']));
         }
-        
+
         // 2. Navigasi ke Home
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
         // Gagal login (email/pass salah)
-        _showSnackBar(data['message'] ?? "Email atau Password salah!", Colors.red);
+        _showSnackBar(
+          data['message'] ?? "Email atau Password salah!",
+          Colors.red,
+        );
       }
     } catch (e) {
       _showSnackBar("Gagal terhubung ke server: $e", Colors.red);
@@ -84,7 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -102,9 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -123,7 +124,11 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
             const SizedBox(height: 80),
-            const Icon(Icons.sports_soccer, size: 100, color: Color(0xFF1B5E20)),
+            const Icon(
+              Icons.sports_soccer,
+              size: 100,
+              color: Color(0xFF1B5E20),
+            ),
             const Text(
               'SPORTS FIELD RENTAL',
               textAlign: TextAlign.center,
@@ -137,7 +142,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
             _inputField("Email / No. HP", _emailController),
             const SizedBox(height: 20),
-            _inputField("Masukkan Password", _passwordController, isPassword: true),
+            _inputField(
+              "Masukkan Password",
+              _passwordController,
+              isPassword: true,
+            ),
 
             const SizedBox(height: 30),
 
@@ -155,16 +164,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : const Text(
                       "LOGIN",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
 
             const SizedBox(height: 25),
-            const Text("atau", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            const Text(
+              "atau",
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 25),
 
             _googleButton(),
@@ -178,7 +196,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _inputField(String label, TextEditingController controller, {bool isPassword = false}) {
+  Widget _inputField(
+    String label,
+    TextEditingController controller, {
+    bool isPassword = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -195,7 +217,10 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[100],
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
               borderSide: BorderSide.none,
@@ -216,9 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 50),
         side: BorderSide(color: Colors.grey.shade300),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         backgroundColor: Colors.white,
       ),
       child: Row(
@@ -229,7 +252,11 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(width: 12),
           const Text(
             "Masuk Dengan Google",
-            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
           ),
         ],
       ),
@@ -245,7 +272,10 @@ class _LoginScreenState extends State<LoginScreen> {
           onTap: () => Navigator.pushNamed(context, '/register'),
           child: const Text(
             "Daftar Sekarang",
-            style: TextStyle(color: Color(0xFF00A32A), fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Color(0xFF00A32A),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],

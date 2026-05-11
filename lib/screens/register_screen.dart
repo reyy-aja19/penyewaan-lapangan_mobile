@@ -13,7 +13,8 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController(); // Controller HP
+  final TextEditingController _phoneController =
+      TextEditingController(); // Controller HP
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
@@ -25,7 +26,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // VALIDASI: Sekarang Nomor HP WAJIB diisi
     if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty) {
-      _showSnackBar("Semua kolom (termasuk nomor HP) wajib diisi!", Colors.orange);
+      _showSnackBar(
+        "Semua kolom (termasuk nomor HP) wajib diisi!",
+        Colors.orange,
+      );
       return;
     }
 
@@ -46,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         body: jsonEncode({
           'name': name,
           'email': email,
-          'phone': phone,      // Mengirim nomor HP
+          'phone': phone, // Mengirim nomor HP
           'password': password,
           'role': 'user',
           'points': 0,
@@ -80,9 +84,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -104,9 +108,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 15),
             _inputField("Email", _emailController, Icons.email),
             const SizedBox(height: 15),
-            _inputField("Nomor HP", _phoneController, Icons.phone, keyboardType: TextInputType.phone),
+            _inputField(
+              "Nomor HP",
+              _phoneController,
+              Icons.phone,
+              keyboardType: TextInputType.phone,
+            ),
             const SizedBox(height: 15),
-            _inputField("Password", _passwordController, Icons.lock, isPassword: true),
+            _inputField(
+              "Password",
+              _passwordController,
+              Icons.lock,
+              isPassword: true,
+            ),
             const SizedBox(height: 40),
             _isLoading
                 ? const CircularProgressIndicator(color: Color(0xFF00A32A))
@@ -115,11 +129,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00A32A),
                       minimumSize: const Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
                     ),
                     child: const Text(
                       "KONFIRMASI",
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
             const SizedBox(height: 20),
@@ -131,7 +151,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onTap: () => Navigator.pop(context),
                   child: const Text(
                     "Masuk",
-                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -143,8 +166,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _inputField(String label, TextEditingController controller, IconData icon, 
-      {bool isPassword = false, TextInputType keyboardType = TextInputType.text}) {
+  Widget _inputField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    bool isPassword = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

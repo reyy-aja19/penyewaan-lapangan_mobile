@@ -45,7 +45,7 @@ class _MatchScreenState extends State<MatchScreen> {
     );
 
     bool success = await MatchApi.joinMatch(matchId);
-    
+
     if (mounted) Navigator.pop(context); // Tutup loading
 
     if (success) {
@@ -62,7 +62,9 @@ class _MatchScreenState extends State<MatchScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Gagal join. Mungkin match penuh atau sudah bergabung."),
+            content: Text(
+              "Gagal join. Mungkin match penuh atau sudah bergabung.",
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -86,16 +88,18 @@ class _MatchScreenState extends State<MatchScreen> {
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFF00A32A)),
             onPressed: _refreshData,
-          )
+          ),
         ],
       ),
       body: FutureBuilder<List<MatchModel>>(
         future: futureMatches,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF00A32A)));
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00A32A)),
+            );
           }
-          
+
           if (snapshot.hasError) {
             return Center(
               child: Column(
@@ -104,7 +108,10 @@ class _MatchScreenState extends State<MatchScreen> {
                   const Icon(Icons.error_outline, size: 50, color: Colors.red),
                   const SizedBox(height: 10),
                   Text("Waduh! ${snapshot.error}"),
-                  TextButton(onPressed: _refreshData, child: const Text("Coba Lagi")),
+                  TextButton(
+                    onPressed: _refreshData,
+                    child: const Text("Coba Lagi"),
+                  ),
                 ],
               ),
             );
@@ -139,7 +146,10 @@ class _MatchScreenState extends State<MatchScreen> {
         },
         backgroundColor: const Color(0xFF00A32A),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text("Buat Match", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text(
+          "Buat Match",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -153,7 +163,11 @@ class _MatchScreenState extends State<MatchScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: ClipRRect(
@@ -173,17 +187,39 @@ class _MatchScreenState extends State<MatchScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(match.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                            Text(
+                              match.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(match.jenis, style: const TextStyle(color: Colors.blueGrey, fontSize: 13)),
+                                Text(
+                                  match.jenis,
+                                  style: const TextStyle(
+                                    color: Colors.blueGrey,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 2),
-                            Text("${match.tanggal.substring(0, 10)} • ${match.startTime}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                            Text(
+                              "${match.tanggal.substring(0, 10)} • ${match.startTime}",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -199,12 +235,14 @@ class _MatchScreenState extends State<MatchScreen> {
                         backgroundColor: const Color(0xFF00A32A),
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         elevation: 0,
                       ),
                       child: Text(isFull ? "MATCH PENUH" : "JOIN SEKARANG"),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -225,19 +263,55 @@ class _MatchScreenState extends State<MatchScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
-            Text(match.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              match.title,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 5),
-            Text(match.jenis, style: const TextStyle(color: Color(0xFF00A32A), fontWeight: FontWeight.bold)),
+            Text(
+              match.jenis,
+              style: const TextStyle(
+                color: Color(0xFF00A32A),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const Divider(height: 30),
-            _detailRow(Icons.calendar_today, "Tanggal", match.tanggal.substring(0, 10)),
-            _detailRow(Icons.access_time, "Waktu", "${match.startTime} - ${match.endTime}"),
-            _detailRow(Icons.group, "Kebutuhan", "${match.jumlahBergabung} / ${match.jumlahPemain} Pemain"),
+            _detailRow(
+              Icons.calendar_today,
+              "Tanggal",
+              match.tanggal.substring(0, 10),
+            ),
+            _detailRow(
+              Icons.access_time,
+              "Waktu",
+              "${match.startTime} - ${match.endTime}",
+            ),
+            _detailRow(
+              Icons.group,
+              "Kebutuhan",
+              "${match.jumlahBergabung} / ${match.jumlahPemain} Pemain",
+            ),
             const SizedBox(height: 15),
-            const Text("Deskripsi", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              "Deskripsi",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 5),
-            Text(match.deskripsi.isEmpty ? "No Description" : match.deskripsi, style: TextStyle(color: Colors.grey[600])),
+            Text(
+              match.deskripsi.isEmpty ? "No Description" : match.deskripsi,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
             const SizedBox(height: 30),
           ],
         ),
@@ -263,10 +337,22 @@ class _MatchScreenState extends State<MatchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text("${match.jumlahBergabung}/${match.jumlahPemain}", 
-             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: isFull ? Colors.red : const Color(0xFF00A32A))),
-        Text(isFull ? "FULL" : "OPEN", 
-             style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isFull ? Colors.red : const Color(0xFF00A32A))),
+        Text(
+          "${match.jumlahBergabung}/${match.jumlahPemain}",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: isFull ? Colors.red : const Color(0xFF00A32A),
+          ),
+        ),
+        Text(
+          isFull ? "FULL" : "OPEN",
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: isFull ? Colors.red : const Color(0xFF00A32A),
+          ),
+        ),
       ],
     );
   }
