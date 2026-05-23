@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart'; // Tambahin ini
 import '../models/match_model.dart';
 
 class MatchApi {
-  static const String baseUrl = 'https://sportsfield.cicd.my.id/api';
+  static const String baseUrl = 'https://sportsfield.my.id/api';
 
   // Ambil semua data match
   static Future<List<MatchModel>> fetchMatches() async {

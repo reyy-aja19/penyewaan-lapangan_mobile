@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<FieldModel>> fetchFields() async {
     try {
       final response = await http.get(
-        Uri.parse('https://sportsfield.cicd.my.id/api/fields'),
+        Uri.parse('https://sportsfield.my.id/api/fields'),
       );
 
       if (response.statusCode == 200) {

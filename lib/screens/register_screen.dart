@@ -42,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://sportsfield.cicd.my.id/api/register'),
+        Uri.parse('https://sportsfield.my.id/api/register'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

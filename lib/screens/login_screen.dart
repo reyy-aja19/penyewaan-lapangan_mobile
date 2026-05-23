@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       // Hit API loginApi yang sudah dibuat di Laravel
       final response = await http.post(
-        Uri.parse('https://sportsfield.cicd.my.id/api/login'),
+        Uri.parse('https://sportsfield.my.id/api/login'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

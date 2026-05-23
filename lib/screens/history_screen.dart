@@ -26,7 +26,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final token = prefs.getString('token');
 
       final response = await http.get(
-        Uri.parse('https://sportsfield.cicd.my.id/api/bookings'),
+        Uri.parse('https://sportsfield.my.id/api/bookings'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

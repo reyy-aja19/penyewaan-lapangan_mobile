@@ -4,7 +4,7 @@ import '../models/field_model.dart';
 
 class FieldService {
   // Ganti jadi FieldService biar sinkron sama HomeScreen
-  static const String baseUrl = 'https://sportsfield.cicd.my.id/api';
+  static const String baseUrl = 'https://sportsfield.my.id/api';
 
   Future<List<FieldModel>> getFields() async {
     try {

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // WAJIB ADA
 
 class ApiService {
-  static const String baseUrl = "https://sportsfield.cicd.my.id/api";
+  static const String baseUrl = "https://sportsfield.my.id/api";
 
   /*
   |--------------------------------------------------------------------------

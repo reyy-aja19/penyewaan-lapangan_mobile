@@ -32,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('https://sportsfield.cicd.my.id/api/user'),
+        Uri.parse('https://sportsfield.my.id/api/user'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
