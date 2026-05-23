@@ -30,8 +30,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           onPageFinished: (String url) {
             setState(() => _isLoading = false);
 
-            // TIPS OPSIONAL: Jika backend Laravel kamu mengarahkan ke link sukses tertentu setelah bayar
-            // Kamu bisa deteksi di sini untuk otomatis memunculkan dialog sukses.
+            // TIPS: Jika backend Laravel kamu mengarahkan ke link sukses tertentu setelah bayar,
+            // kamu bisa deteksi di sini untuk otomatis memunculkan dialog sukses/pindah halaman.
             // Contoh:
             // if (url.contains('sportsfield.my.id/booking/success')) {
             //   _showSuccessDialog(context);
