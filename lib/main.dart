@@ -6,7 +6,7 @@ import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/payment_screen.dart';
+// REVISI: Import payment_screen.dart dihapus dari sini karena sudah tidak digunakan di main.dart
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/point_screen.dart';
@@ -48,10 +48,9 @@ class SportsFieldApp extends StatelessWidget {
         '/': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const MainNavigation(),
-        // REVISI: Route /schedule dan /checkout dihapus dari sini
-        // karena sekarang menggunakan Navigator.push manual untuk kirim data.
+        // REVISI: Route /schedule, /checkout, dan /payment dihapus dari sini
+        // karena sekarang menggunakan Navigator.push manual untuk mengirim data dinamis.
         '/history': (context) => const HistoryScreen(),
-        '/payment': (context) => const PaymentScreen(),
         '/success_auth': (context) => const SuccessAuthScreen(),
       },
     );

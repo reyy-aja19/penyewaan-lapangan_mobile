@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:penyewaan_lapangan/services/api_service.dart';
+import 'package:penyewaan_lapangan/screens/payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final int lapanganId;
@@ -49,11 +50,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     print("Tanggal: ${widget.tanggal}");
     print("Jam (Raw): ${widget.jam}");
     print("Total Harga: $cleanPrice");
+    print("Metode: $_selectedMethod");
     print("----------------------");
 
     try {
       // KIRIM JAM APA ADANYA ("08:00, 09:00")
-      // Laravel lo butuh string ini utuh buat di-explode
       final result = await apiService.postBooking(
         userId: userId,
         lapanganId: widget.lapanganId,
@@ -66,16 +67,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
 
       if (result['status'] == true) {
-        // Update poin di memori lokal (opsional kalau lo mau lgsg refresh dari API)
+        // Update poin di memori lokal
         if (userRaw != null) {
           Map<String, dynamic> userData = jsonDecode(userRaw);
-          // Ambil poin terbaru dari response API jika ada, atau tambah manual +5
           userData['points'] =
               result['current_points'] ?? (userData['points'] ?? 0) + 5;
           await prefs.setString('user', jsonEncode(userData));
         }
 
-        if (mounted) _showSuccessDialog(context);
+        if (mounted) {
+          // JIKA METODE BUKAN TUNAI (Menggunakan Midtrans)
+          if (_selectedMethod != "Tunai di Tempat") {
+            // Pastikan Laravel me-return 'redirect_url' di dalam response-nya
+            if (result['redirect_url'] != null) {
+              // Pindah ke payment_screen.dart membawa URL Midtrans Snap
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PaymentScreen(
+                    paymentUrl: result['redirect_url'],
+                  ),
+                ),
+              );
+            } else {
+              _showSnackBar("URL Pembayaran tidak ditemukan dari server.", Colors.red);
+            }
+          } else {
+            // JIKA TUNAI, langsung tampilkan dialog sukses seperti biasa
+            _showSuccessDialog(context);
+          }
+        }
       } else {
         _showSnackBar("Gagal: ${result['message']}", Colors.red);
       }

@@ -1,144 +1,103 @@
 import 'package:flutter/material.dart';
-import '../services/database_api.dart'; // Import file API Database kamu
+import 'package:webview_flutter/webview_flutter.dart';
 
-class PaymentScreen extends StatelessWidget {
-  const PaymentScreen({super.key});
+class PaymentScreen extends StatefulWidget {
+  final String paymentUrl;
+
+  // Menerima redirect_url dari CheckoutScreen
+  const PaymentScreen({super.key, required this.paymentUrl});
+
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Inisialisasi WebViewController untuk memuat halaman Midtrans Snap
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            setState(() => _isLoading = true);
+          },
+          onPageFinished: (String url) {
+            setState(() => _isLoading = false);
+
+            // TIPS OPSIONAL: Jika backend Laravel kamu mengarahkan ke link sukses tertentu setelah bayar
+            // Kamu bisa deteksi di sini untuk otomatis memunculkan dialog sukses.
+            // Contoh:
+            // if (url.contains('sportsfield.my.id/booking/success')) {
+            //   _showSuccessDialog(context);
+            // }
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            // Izinkan WebView berpindah ke halaman pembayaran Midtrans
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.paymentUrl));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF00A32A),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        title: const Text(
+          "Pembayaran",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        leading: BackButton(
+          color: Colors.black,
+          onPressed: () {
+            // Konfirmasi jika user ingin keluar dari halaman pembayaran
+            _showCancelDialog(context);
+          },
+        ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          const Text(
-            "Total Pembayaran",
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          const Text(
-            "Rp 90.000",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 30),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(25),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Metode Pembayaran",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 15),
-                  _paymentMethod("Virtual Account", false),
-                  _paymentMethod("Alfamart", false),
-                  _paymentMethod("Gopay", true),
-                  const Spacer(),
-
-                  // --- TOMBOL BAYAR DENGAN LOGIKA API ---
-                  ElevatedButton(
-                    onPressed: () async {
-                      // 1. Jalankan API Simpan ke Firestore
-                      await DatabaseApi().simpanBooking(
-                        namaUser:
-                            "User Tester", // Nanti bisa ambil dari FirebaseAuth
-                        namaLapangan: "Lapangan Badminton A",
-                        tanggal: "24 Mei 2026",
-                        jam: "10:00 - 12:00",
-                        totalHarga: 90000,
-                      );
-
-                      // 2. Tampilkan Dialog Sukses (Context dijamin aman setelah await)
-                      if (context.mounted) {
-                        _showSuccessDialog(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00A32A),
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      "Bayar",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+          WebViewWidget(controller: _controller),
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF00A32A),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _paymentMethod(String name, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Icon(
-            isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-            color: isSelected ? Colors.green : Colors.grey,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessDialog(BuildContext context) {
+  void _showCancelDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 80),
-            const SizedBox(height: 20),
-            const Text(
-              "selamat Pembayaran kamu berhasil",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.popUntil(context, ModalRoute.withName('/home')),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-              child: const Text(
-                "kembali",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+        title: const Text("Batalkan Pembayaran?"),
+        content: const Text("Apakah kamu yakin ingin keluar? Kamu bisa mengecek status pembayaranmu nanti di halaman riwayat."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Tidak", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Tutup dialog
+              Navigator.pop(context); // Keluar dari PaymentScreen
+            },
+            child: const Text("Ya, Keluar", style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
