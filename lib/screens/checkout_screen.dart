@@ -76,25 +76,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
 
         if (mounted) {
-          // JIKA METODE BUKAN TUNAI (Menggunakan Midtrans)
-          if (_selectedMethod != "Tunai di Tempat") {
-            // Pastikan Laravel me-return 'redirect_url' di dalam response-nya
-            if (result['redirect_url'] != null) {
-              // Pindah ke payment_screen.dart membawa URL Midtrans Snap
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PaymentScreen(
-                    paymentUrl: result['redirect_url'],
-                  ),
+          // Pastikan Laravel me-return 'redirect_url' di dalam response-nya
+          if (result['redirect_url'] != null) {
+            // Pindah ke payment_screen.dart membawa URL Midtrans Snap
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PaymentScreen(
+                  paymentUrl: result['redirect_url'],
                 ),
+              ),
+            );
+
+            // Setelah WebView ditutup (pembayaran selesai), langsung arahkan ke halaman history
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context, 
+                '/history', 
+                (route) => route.isFirst,
               );
-            } else {
-              _showSnackBar("URL Pembayaran tidak ditemukan dari server.", Colors.red);
             }
           } else {
-            // JIKA TUNAI, langsung tampilkan dialog sukses seperti biasa
-            _showSuccessDialog(context);
+            _showSnackBar("URL Pembayaran tidak ditemukan dari server.", Colors.red);
           }
         }
       } else {
@@ -172,7 +175,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               "E-Wallet (Dana/OVO)",
               Icons.account_balance_wallet,
             ),
-            _buildMethodOption("Tunai di Tempat", Icons.payments_outlined),
           ],
         ),
       ),
@@ -257,63 +259,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   strokeWidth: 2,
                 ),
               )
-            : Text(
-                "Bayar dengan $_selectedMethod",
-                style: const TextStyle(
+            : const Text(
+                "Bayar Sekarang",
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-      ),
-    );
-  }
-
-  void _showSuccessDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Color(0xFF00A32A), size: 80),
-            const SizedBox(height: 20),
-            const Text(
-              "Pembayaran Berhasil!",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Poin kamu bertambah +5!",
-              style: TextStyle(
-                color: Colors.orange,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Silakan tunjukkan kode booking saat tiba.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 25),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.popUntil(context, (route) => route.isFirst),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A32A),
-                ),
-                child: const Text(
-                  "Kembali ke Beranda",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

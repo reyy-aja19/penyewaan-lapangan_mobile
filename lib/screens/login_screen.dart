@@ -73,10 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- FUNGSI LOGIN GOOGLE (Tetap seperti semula) ---
+  // --- FUNGSI LOGIN GOOGLE (Sudah Diperbaiki Dengan serverClientId) ---
   Future<void> _handleGoogleSignIn() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      // PERBAIKAN: Menyisipkan Web Client ID dari file google-services.json kelompokmu
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: '844099394384-tk6tsrvnppuvuafu4eshqfhq2m1hl9eu.apps.googleusercontent.com',
+      );
+      
       if (await googleSignIn.isSignedIn()) {
         await googleSignIn.signOut();
       }
@@ -247,7 +251,6 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Pastikan file ini ada di pubspec.yaml atau ganti dengan Icon Google
           const Icon(Icons.g_mobiledata, color: Colors.red, size: 30),
           const SizedBox(width: 12),
           const Text(
