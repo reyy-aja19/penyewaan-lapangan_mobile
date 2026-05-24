@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "844099394384-21kep6f4gcepovhb2ffulqsfbi4t5sj9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.penyewaan_lapangan",
+            "certificate_hash": "363f7aa1b150fcb163cff5f4d00b49cfe1d4f1a7"
+          }
+        },
+        {
           "client_id": "844099394384-pia3jlkrej1vnolhc5ninkm3tpatt97g.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
