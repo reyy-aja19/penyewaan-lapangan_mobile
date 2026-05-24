@@ -9,7 +9,7 @@ class ApiService {
   |--------------------------------------------------------------------------
   | 1. POST BOOKING (Untuk Checkout)
   |--------------------------------------------------------------------------
-  */
+  |*/
   Future<Map<String, dynamic>> postBooking({
     required int userId,
     required int lapanganId,
@@ -36,7 +36,7 @@ class ApiService {
           'user_id': userId,
           'lapangan_id': lapanganId,
           'payment_method': paymentMethod,
-          'booking_date': date,
+          'date': date, // REVISI: Diubah dari 'booking_date' menjadi 'date' agar pas dengan validasi Laravel
           'start_time': startTime,
           'end_time': endTime,
           'total_price': totalPrice,
@@ -47,7 +47,9 @@ class ApiService {
       final decoded = jsonDecode(response.body);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return {'status': true, 'data': decoded};
+        // REVISI: Langsung return 'decoded' secara utuh (tidak dibungkus ke dalam objek 'data')
+        // Agar properti 'status', 'redirect_url', dan 'current_points' terbaca langsung oleh CheckoutScreen
+        return decoded;
       } else if (response.statusCode == 401) {
         return {'status': false, 'message': 'Sesi habis, silakan login ulang'};
       } else {
@@ -63,7 +65,7 @@ class ApiService {
   |--------------------------------------------------------------------------
   | 2. GET HISTORY (Untuk HistoryScreen)
   |--------------------------------------------------------------------------
-  */
+  |*/
   Future<List<dynamic>> getBookingHistory(int userId) async {
     final url = Uri.parse('$baseUrl/bookings');
     final prefs = await SharedPreferences.getInstance();
@@ -99,9 +101,8 @@ class ApiService {
   |--------------------------------------------------------------------------
   | 3. GET BOOKED SLOTS (Untuk Warnain Jam Merah)
   |--------------------------------------------------------------------------
-  */
+  |*/
   Future<List<String>> getBookedSlots(int lapanganId, String tanggal) async {
-    // Pastikan URL-nya sesuai dengan route yang lo bikin di Laravel
     final url = Uri.parse(
       '$baseUrl/booked-slots?lapangan_id=$lapanganId&tanggal=$tanggal',
     );
@@ -121,7 +122,6 @@ class ApiService {
         final decoded = jsonDecode(response.body);
         if (decoded['status'] == true) {
           List data = decoded['data'];
-          // Kita ambil start_time saja, dan potong jadi "HH:mm" (misal: 08:00:00 jadi 08:00)
           return data.map((e) {
             String time = e['start_time'].toString();
             return time.length >= 5 ? time.substring(0, 5) : time;
