@@ -3,7 +3,6 @@ import 'package:penyewaan_lapangan/models/field_model.dart'; // Pastikan path im
 import 'schedule_screen.dart';
 
 class DetailScreen extends StatelessWidget {
-  // SEKARANG: Menggunakan FieldModel, bukan Map lagi
   final FieldModel field;
 
   const DetailScreen({super.key, required this.field});
@@ -22,7 +21,7 @@ class DetailScreen extends StatelessWidget {
                 height: 250,
                 width: double.infinity,
                 child: Image.network(
-                  field.imageUrl ?? "", // Menggunakan properti dari FieldModel
+                  field.imageUrl ?? "",
                   fit: BoxFit.cover,
                   errorBuilder: (context, e, s) => Container(
                     color: Colors.blueGrey[200],
@@ -60,7 +59,7 @@ class DetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  field.name, // Menggunakan field.name
+                  field.name,
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -70,19 +69,19 @@ class DetailScreen extends StatelessWidget {
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 20),
-                    // Catatan: Jika FieldModel belum ada rating, bisa hardcode dulu atau tambah ke model
                     const Text(" 4.5 Rating • Kab. Indramayu"),
                   ],
                 ),
                 const Divider(height: 30),
+                
+                // --- BAGIAN FASILITAS DINAMIS LARAVEL ---
                 const Text(
                   "Fasilitas",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  "🚲 parkir mobil/motor      🥤 jual minuman\n🚽 toilet               🍔 jual makanan\n🎾 jual peralatan olahraga",
-                ),
+                _buildDynamicFacilities(), // Memanggil widget fasilitas dinamis
+                
                 const SizedBox(height: 20),
                 const Text(
                   "Deskripsi",
@@ -90,8 +89,7 @@ class DetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  field.description ??
-                      "Tidak ada deskripsi untuk lapangan ini.",
+                  field.description ?? "Tidak ada deskripsi untuk lapangan ini.",
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
@@ -121,7 +119,7 @@ class DetailScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     Text(
-                      "Rp ${field.price}", // Menggunakan field.price
+                      "Rp ${field.price}",
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -132,12 +130,11 @@ class DetailScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Pindah ke ScheduleScreen membawa data dari FieldModel
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ScheduleScreen(
-                          id: field.id, // Pastikan FieldModel punya id
+                          id: field.id,
                           namaLapangan: field.name,
                           hargaLapangan: "Rp ${field.price}",
                         ),
@@ -168,5 +165,58 @@ class DetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // --- WIDGET HELPER UNTUK MENGURAI FASILITAS ---
+  Widget _buildDynamicFacilities() {
+    // DISESUAIKAN: Menggunakan field.fasilitas sesuai dengan properti di FieldModel kamu
+    if (field.fasilitas == null || field.fasilitas.toString().trim().isEmpty) {
+      return const Text(
+        "Standard Court",
+        style: TextStyle(color: Colors.grey, fontSize: 13),
+      );
+    }
+
+    List<String> facilityList = [];
+
+    // Cek jika data dari Laravel berupa List/Array JSON
+    if (field.fasilitas is List) {
+      facilityList = List<String>.from(field.fasilitas);
+    } 
+    // Cek jika data dari Laravel berupa String teks biasa (misal: "Wifi, Toilet, Parkir")
+    else if (field.fasilitas is String) {
+      facilityList = field.fasilitas.toString().split(',').map((e) => e.trim()).toList();
+    }
+
+    return Wrap(
+      spacing: 8.0,
+      runSpacing: 4.0,
+      children: facilityList.map((item) {
+        return Chip(
+          backgroundColor: const Color(0xFFF1F3F5),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side: BorderSide.none,
+          avatar: Icon(_getIconForFacility(item), size: 16, color: Colors.green),
+          label: Text(
+            item,
+            style: const TextStyle(fontSize: 12, color: Colors.black87),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Memberikan icon otomatis berdasarkan kata kunci yang dikirim oleh backend Laravel
+  IconData _getIconForFacility(String name) {
+    String lower = name.toLowerCase();
+    if (lower.contains('parkir')) return Icons.local_parking;
+    if (lower.contains('toilet') || lower.contains('wc')) return Icons.wc;
+    if (lower.contains('minum') || lower.contains('kantin')) return Icons.local_drink;
+    if (lower.contains('makan')) return Icons.restaurant;
+    if (lower.contains('wifi')) return Icons.wifi;
+    if (lower.contains('mushola') || lower.contains('masjid')) return Icons.mosque;
+    return Icons.check_circle_outline; // Default icon jika tidak ada kecocokan kata
   }
 }

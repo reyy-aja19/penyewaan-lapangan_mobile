@@ -6,6 +6,7 @@ class FieldModel {
   final String? imageUrl; // Menambahkan ? agar boleh null
   final String? description; // Menambahkan ? agar boleh null
   final String status;
+  final dynamic fasilitas;
 
   FieldModel({
     required this.id,
@@ -14,6 +15,7 @@ class FieldModel {
     required this.price,
     this.imageUrl, // Kata kunci 'required' dihapus karena boleh null
     this.description, // Kata kunci 'required' dihapus karena boleh null
+    this.fasilitas,
     required this.status,
   });
 
@@ -29,7 +31,7 @@ class FieldModel {
 
       // Gabungkan baseUrl dengan path 'foto' dari JSON
       imageUrl: json['foto'] != null ? baseUrl + json['foto'] : null,
-
+      fasilitas: json['fasilitas'],
       description: json['deskripsi'] ?? 'Tidak ada deskripsi',
       status: json['status'] ?? 'available',
     );
