@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match_model.dart';
 import '../services/match_api.dart';
-import 'create_match_screen.dart';
 
 class MatchScreen extends StatefulWidget {
   const MatchScreen({super.key});
@@ -136,21 +135,7 @@ class _MatchScreenState extends State<MatchScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateMatchScreen()),
-          );
-          if (result == true) _refreshData();
-        },
-        backgroundColor: const Color(0xFF00A32A),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          "Buat Match",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+      // REVISI: FloatingActionButton dihapus total agar pembuatan Open Match wajib lewat kartu History yang berstatus Lunas.
     );
   }
 

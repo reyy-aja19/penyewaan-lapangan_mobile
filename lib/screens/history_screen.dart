@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'create_match_screen.dart'; // WAJIB IMPORT HALAMAN FORM MATCH KAMU
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -142,7 +143,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       onRefresh: () async => _refreshData(),
       child: ListView.builder(
         padding: const EdgeInsets.all(20),
-        itemCount: bookings.length,
+        itemCount: bookings.length, // Baris onDestroy sudah dihapus aman di sini
         itemBuilder: (context, index) {
           final b = bookings[index];
 
@@ -152,25 +153,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
           if (b['status'] == 'Batal') statusColor = Colors.red;
           if (b['status'] == 'Selesai') statusColor = Colors.grey;
 
-          return _historyCard(
-            b['lapangan']?['nama_lapangan'] ?? "Lapangan",
-            b['booking_date'].toString().substring(0, 10),
-            "${b['start_time']} - ${b['end_time']}",
-            b['status'],
-            statusColor,
-          );
+          return _historyCard(b, statusColor);
         },
       ),
     );
   }
 
-  Widget _historyCard(
-    String title,
-    String date,
-    String time,
-    String status,
-    Color statusColor,
-  ) {
+  Widget _historyCard(dynamic booking, Color statusColor) {
+    String status = booking['status'] ?? 'pending';
+    String title = booking['lapangan']?['nama_lapangan'] ?? "Lapangan";
+    
+    // Penanganan substring aman untuk parsing tanggal dari database
+    String fullDate = booking['booking_date'] ?? booking['tanggal'] ?? "2026-01-01";
+    String dateParsed = fullDate.length >= 10 ? fullDate.substring(0, 10) : fullDate;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(15),
@@ -220,18 +216,52 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
               const SizedBox(width: 8),
               Text(
-                date,
+                dateParsed,
                 style: const TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(width: 20),
               const Icon(Icons.access_time, size: 14, color: Colors.grey),
               const SizedBox(width: 8),
               Text(
-                time,
+                "${booking['start_time']} - ${booking['end_time'] ?? ''}",
                 style: const TextStyle(color: Colors.grey, fontSize: 13),
               ),
             ],
           ),
+
+          // --- KUNCI INTEGRASI: JIKA STATUS LUNAS, MUNCULKAN TOMBOL OPEN MATCH ---
+          if (status.toLowerCase() == 'lunas') ...[
+            const Divider(height: 25),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  // Arahkan ke CreateMatchScreen dengan melempar data Map Booking ini
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateMatchScreen(bookingData: booking),
+                    ),
+                  );
+                  if (result == true) {
+                    _refreshData();
+                  }
+                },
+                icon: const Icon(Icons.sports_soccer, size: 18, color: Colors.white),
+                label: const Text(
+                  "BUAT OPEN MATCH",
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00A32A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ]
         ],
       ),
     );

@@ -3,7 +3,10 @@ import '../models/match_model.dart';
 import '../services/match_api.dart';
 
 class CreateMatchScreen extends StatefulWidget {
-  const CreateMatchScreen({super.key});
+  // Menerima data booking dari HistoryScreen
+  final dynamic bookingData;
+
+  const CreateMatchScreen({super.key, this.bookingData});
 
   @override
   State<CreateMatchScreen> createState() => _CreateMatchScreenState();
@@ -16,30 +19,62 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   final _descController = TextEditingController();
 
   String _selectedJenis = 'Futsal';
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _startTime = const TimeOfDay(hour: 16, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 17, minute: 0);
+  String _bookingDateString = '';
+  String _startTimeString = '16:00';
+  String _endTimeString = '17:00';
+  int _bookingId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi data otomatis jika mendapat lemparan data dari HistoryScreen
+    if (widget.bookingData != null) {
+      _bookingId = widget.bookingData['id'] ?? 0;
+      
+      // Ambil nama lapangan / jenis olahraga otomatis dari relasi database
+      _selectedJenis = widget.bookingData['lapangan']?['jenis'] ?? 'Futsal';
+      
+      // Parsing aman string tanggal
+      String rawDate = widget.bookingData['booking_date'] ?? widget.bookingData['tanggal'] ?? '';
+      _bookingDateString = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
+      
+      // Ambil jam sewa
+      _startTimeString = widget.bookingData['start_time'] ?? '16:00';
+      _endTimeString = widget.bookingData['end_time'] ?? '17:00';
+    } else {
+      _bookingDateString = "${DateTime.now().toLocal()}".split(' ')[0];
+    }
+  }
 
   // Custom styling "CSS" di variabel agar kode lebih bersih
-  final _inputDecoration = (String label, IconData icon) => InputDecoration(
-    labelText: label,
-    prefixIcon: Icon(icon, color: Colors.green),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.green, width: 2),
-    ),
-  );
+  final _inputDecoration = (String label, IconData icon, {bool enabled = true}) => InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: enabled ? Colors.green : Colors.grey),
+        fillColor: enabled ? Colors.white : Colors.grey.shade100,
+        filled: !enabled,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: enabled ? Colors.green : Colors.grey, width: 2),
+        ),
+      );
 
   void _submitData() async {
     if (_formKey.currentState!.validate()) {
+      if (_bookingId == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error: ID Booking tidak valid."), backgroundColor: Colors.red),
+        );
+        return;
+      }
+
       final newMatch = MatchModel(
-        id: 0,
+        id: _bookingId, // Mengirim booking_id sesuai validasi backend Laravel
         title: _titleController.text,
         jenis: _selectedJenis,
-        tanggal: "${_selectedDate.toLocal()}".split(' ')[0],
-        startTime: _startTime.format(context),
-        endTime: _endTime.format(context),
+        tanggal: _bookingDateString,
+        startTime: _startTimeString,
+        endTime: _endTimeString,
         jumlahPemain: int.parse(_jmlPemainController.text),
         jumlahBergabung: 1,
         status: 'Open',
@@ -51,9 +86,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Match Berhasil Dibuat!")),
+            const SnackBar(content: Text("Match Berhasil Dibuat!"), backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true);
+          Navigator.pop(context, true); // Kembali ke HistoryScreen & refresh data
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Gagal membuat match. Cek kembali status booking kamu."), backgroundColor: Colors.red),
+          );
         }
       }
     }
@@ -73,7 +114,6 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         foregroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
-        // Biar keyboard gak nutupin input
         padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
@@ -81,7 +121,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Detail Pertandingan",
+                "Detail Pertandingan (Otomatis Terisi)",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -98,18 +138,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               const SizedBox(height: 15),
 
-              // Dropdown Jenis Olahraga
-              DropdownButtonFormField(
-                value: _selectedJenis,
-                decoration: _inputDecoration(
-                  "Jenis Olahraga",
-                  Icons.sports_soccer,
-                ),
-                items: ['Futsal', 'Basket', 'Badminton'].map((e) {
-                  return DropdownMenuItem(value: e, child: Text(e));
-                }).toList(),
-                onChanged: (val) =>
-                    setState(() => _selectedJenis = val.toString()),
+              // Dropdown Jenis Olahraga (Disabled/ReadOnly karena otomatis dari booking)
+              TextFormField(
+                initialValue: _selectedJenis,
+                readOnly: true,
+                decoration: _inputDecoration("Jenis Olahraga", Icons.sports_soccer, enabled: false),
               ),
               const SizedBox(height: 15),
 
@@ -117,7 +150,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               TextFormField(
                 controller: _jmlPemainController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration("Maksimal Pemain", Icons.groups),
+                decoration: _inputDecoration("Maksimal Pemain (Kebutuhan)", Icons.groups),
                 validator: (v) => v!.isEmpty ? "Isi jumlah pemain" : null,
               ),
               const SizedBox(height: 15),
@@ -126,34 +159,37 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                decoration: _inputDecoration("Deskripsi", Icons.description),
+                decoration: _inputDecoration("Deskripsi Tambahan / Catatan", Icons.description),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
 
-              // Picker Tanggal (Styling pake Container biar kayak tombol bagus)
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.calendar_today,
-                    color: Colors.green,
+              // Tampilan Tanggal Otomatis (ReadOnly)
+              TextFormField(
+                initialValue: "Tanggal Main: $_bookingDateString",
+                readOnly: true,
+                decoration: _inputDecoration("Tanggal", Icons.calendar_today, enabled: false),
+              ),
+              const SizedBox(height: 15),
+
+              // Tampilan Jam Otomatis (ReadOnly)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _startTimeString,
+                      readOnly: true,
+                      decoration: _inputDecoration("Mulai", Icons.access_time, enabled: false),
+                    ),
                   ),
-                  title: Text(
-                    "Tanggal: ${_selectedDate.toLocal()}".split(' ')[0],
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _endTimeString,
+                      readOnly: true,
+                      decoration: _inputDecoration("Selesai", Icons.access_time, enabled: false),
+                    ),
                   ),
-                  onTap: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2027),
-                    );
-                    if (picked != null) setState(() => _selectedDate = picked);
-                  },
-                ),
+                ],
               ),
               const SizedBox(height: 30),
 
@@ -169,7 +205,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 5,
+                    elevation: 3,
                   ),
                   child: const Text(
                     "SIMPAN MATCH",

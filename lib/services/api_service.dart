@@ -134,4 +134,57 @@ class ApiService {
       return [];
     }
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | POST CREATE OPEN MATCH
+  |--------------------------------------------------------------------------
+  |*/
+  Future<Map<String, dynamic>> createOpenMatch({
+    required int bookingId,
+    required String title,
+    required String jenis,
+    required String tanggal,
+    required int jumlahPemain,
+    String? startTime,
+    String? endTime,
+    String? deskripsi,
+  }) async {
+    final url = Uri.parse('$baseUrl/open-match'); // Sesuaikan dengan route API kamu
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'booking_id': bookingId,
+          'title': title,
+          'jenis': jenis,
+          'tanggal': tanggal,
+          'jumlah_pemain': jumlahPemain,
+          'start_time': startTime ?? '',
+          'end_time': endTime ?? '',
+          'deskripsi': deskripsi ?? '',
+        }),
+      );
+
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return decoded; // Berhasil dibuat
+      } else {
+        // Mengembalikan pesan error dari Laravel (misal: "Gagal: Kamu harus melunasi...")
+        String errorMessage = decoded['message'] ?? 'Gagal membuat open match';
+        return {'status': false, 'message': errorMessage};
+      }
+    } catch (e) {
+      return {'status': false, 'message': 'Terjadi kesalahan koneksi: $e'};
+    }
+  }
 }
