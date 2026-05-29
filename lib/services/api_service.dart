@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // WAJIB ADA
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = "https://sportsfield.my.id/api";
@@ -179,12 +179,78 @@ class ApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return decoded; // Berhasil dibuat
       } else {
-        // Mengembalikan pesan error dari Laravel (misal: "Gagal: Kamu harus melunasi...")
         String errorMessage = decoded['message'] ?? 'Gagal membuat open match';
         return {'status': false, 'message': errorMessage};
       }
     } catch (e) {
       return {'status': false, 'message': 'Terjadi kesalahan koneksi: $e'};
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 4. REWARDS MANAGEMENT (Untuk PointScreen)
+  |--------------------------------------------------------------------------
+  |*/
+  
+  /// Ambil daftar reward dari database Laravel
+  Future<Map<String, dynamic>> getRewards() async {
+    final url = Uri.parse('$baseUrl/rewards');
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', // Membawa token user yang login
+        },
+      );
+
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return decoded;
+      } else {
+        String errorMessage = decoded['message'] ?? 'Gagal mengambil daftar reward';
+        return {'status': false, 'message': errorMessage};
+      }
+    } catch (e) {
+      return {'status': false, 'message': 'Terjadi kesalahan koneksi: $e'};
+    }
+  }
+
+  /// Post klaim penukaran reward ke backend Laravel
+  Future<Map<String, dynamic>> redeemReward({required int rewardId}) async {
+    final url = Uri.parse('$baseUrl/rewards/redeem');
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', // Membawa token user yang login
+        },
+        body: jsonEncode({
+          'reward_id': rewardId,
+        }),
+      );
+
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return decoded;
+      } else {
+        String errorMessage = decoded['message'] ?? 'Gagal menukarkan reward';
+        return {'status': false, 'message': errorMessage};
+      }
+    } catch (e) {
+      return {'status': false, 'message': 'Terjadi kesalahan koneksi saat menukar: $e'};
     }
   }
 }
