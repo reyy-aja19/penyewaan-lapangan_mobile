@@ -25,7 +25,6 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  String _selectedMethod = "Transfer Bank (VA)";
   bool _isLoading = false;
 
   Future<void> _handlePayment() async {
@@ -44,30 +43,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     double cleanPrice =
         double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
-    // --- DEBUGGING LOG ---
-    print("--- DEBUG CHECKOUT ---");
-    print("Lapangan ID: ${widget.lapanganId}");
-    print("Tanggal: ${widget.tanggal}");
-    print("Jam (Raw): ${widget.jam}");
-    print("Total Harga: $cleanPrice");
-    print("Metode: $_selectedMethod");
-    print("----------------------");
-
     try {
-      // KIRIM JAM APA ADANYA ("08:00, 09:00")
+      // Kita kirim "Midtrans" sebagai default payment method ke backend
       final result = await apiService.postBooking(
         userId: userId,
         lapanganId: widget.lapanganId,
-        paymentMethod: _selectedMethod,
+        paymentMethod: "Midtrans", 
         date: widget.tanggal,
-        startTime: widget.jam, // Jangan di-split di sini, kirim utuh!
-        endTime: "", // Laravel bakal hitung otomatis per jam
+        startTime: widget.jam,
+        endTime: "", 
         totalPrice: cleanPrice,
         hours: widget.jam.split(',').length,
       );
 
       if (result['status'] == true) {
-        // Update poin di memori lokal
         if (userRaw != null) {
           Map<String, dynamic> userData = jsonDecode(userRaw);
           userData['points'] =
@@ -76,9 +65,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
 
         if (mounted) {
-          // Pastikan Laravel me-return 'redirect_url' di dalam response-nya
           if (result['redirect_url'] != null) {
-            // Pindah ke payment_screen.dart membawa URL Midtrans Snap
             await Navigator.push(
               context,
               MaterialPageRoute(
@@ -88,7 +75,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             );
 
-            // Setelah WebView ditutup (pembayaran selesai), langsung arahkan ke halaman history
             if (mounted) {
               Navigator.pushNamedAndRemoveUntil(
                 context, 
@@ -97,14 +83,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               );
             }
           } else {
-            _showSnackBar("URL Pembayaran tidak ditemukan dari server.", Colors.red);
+            _showSnackBar("URL Pembayaran tidak ditemukan.", Colors.red);
           }
         }
       } else {
         _showSnackBar("Gagal: ${result['message']}", Colors.red);
       }
     } catch (e) {
-      print("Error Payment: $e");
       _showSnackBar("Koneksi Error!", Colors.red);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -112,9 +97,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
   }
 
   @override
@@ -123,7 +108,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          "Konfirmasi Pembayaran",
+          "Konfirmasi Pesanan",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
@@ -160,60 +145,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const Divider(height: 30),
                   _rowInfo("Jam", widget.jam),
                   const Divider(height: 30),
-                  _rowInfo("Total Harga", widget.harga, isPrice: true),
+                  _rowInfo("Total Bayar", widget.harga, isPrice: true),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            const Text(
-              "Metode Pembayaran",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 15),
-            _buildMethodOption("Transfer Bank (VA)", Icons.account_balance),
-            _buildMethodOption(
-              "E-Wallet (Dana/OVO)",
-              Icons.account_balance_wallet,
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "Pilih metode pembayaran favoritmu di halaman selanjutnya.",
+                      style: TextStyle(fontSize: 13, color: Colors.blueAccent),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
       bottomNavigationBar: _buildPayButton(context),
-    );
-  }
-
-  Widget _buildMethodOption(String title, IconData icon) {
-    bool isSelected = _selectedMethod == title;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedMethod = title),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF00A32A) : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: ListTile(
-          leading: Icon(
-            icon,
-            color: isSelected ? const Color(0xFF00A32A) : Colors.grey,
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isSelected ? const Color(0xFF00A32A) : Colors.black87,
-            ),
-          ),
-          trailing: Icon(
-            isSelected ? Icons.check_circle : Icons.circle_outlined,
-            color: isSelected ? const Color(0xFF00A32A) : Colors.grey,
-          ),
-        ),
-      ),
     );
   }
 
@@ -260,9 +219,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               )
             : const Text(
-                "Bayar Sekarang",
+                "Lanjut ke Pembayaran",
                 style: TextStyle(
                   color: Colors.white,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
