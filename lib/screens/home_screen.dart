@@ -139,22 +139,41 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // KODE BARU (Benar untuk SVG)
+              // REVISI: Mengubah SvgPicture menjadi Image.network karena formatnya JPG/PNG
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(20),
                 ),
-                child: SvgPicture.network(
-                  field.imageUrl ??
-                      '', // Path SVG lengkap (misal: http://192.168.1.15:8000/uploads/...)
+                child: Image.network(
+                  field.imageUrl ?? '', 
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  // Placeholder jika gambar loading atau error
-                  placeholderBuilder: (BuildContext context) => Container(
+                  // Indikator loading saat men-download gambar dari VPS
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 120,
+                      color: Colors.grey[100],
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF00A32A),
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  // Tampilan cadangan jika link eror atau data kosong
+                  errorBuilder: (context, error, stackTrace) => Container(
                     height: 120,
                     color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
+                    child: const Center(
+                      child: Icon(Icons.image, color: Colors.grey, size: 40),
+                    ),
                   ),
                 ),
               ),
