@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:penyewaan_lapangan/screens/history_screen.dart'; // Pastikan path import ini sesuai dengan struktur folder lu, atau gunakan named route jika ada
 
 class PaymentScreen extends StatefulWidget {
   final String paymentUrl;
@@ -30,12 +31,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           onPageFinished: (String url) {
             setState(() => _isLoading = false);
 
-            // TIPS: Jika backend Laravel kamu mengarahkan ke link sukses tertentu setelah bayar,
-            // kamu bisa deteksi di sini untuk otomatis memunculkan dialog sukses/pindah halaman.
-            // Contoh:
-            // if (url.contains('sportsfield.my.id/booking/success')) {
-            //   _showSuccessDialog(context);
-            // }
+            // DETEKSI STRING REDIRECT DARI MIDTRANS/BACKEND JIKA SUKSES
+            // Jika URL mengandung kata finish, atau success, langsung tendang ke History
+            if (url.contains('finish') || url.contains('success') || url.contains('status-pembayaran')) {
+              _redirectToHistory();
+            }
           },
           onNavigationRequest: (NavigationRequest request) {
             // Izinkan WebView berpindah ke halaman pembayaran Midtrans
@@ -44,6 +44,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       )
       ..loadRequest(Uri.parse(widget.paymentUrl));
+  }
+
+  // --- LOGIKA UTAMA: REDIRECT PAKSA KE HISTORY SCREEN ---
+  void _redirectToHistory() {
+    if (mounted) {
+      // Opsi 1: Jika lu mendaftarkan route '/history' di main.dart
+      Navigator.pushNamedAndRemoveUntil(context, '/history', (route) => route.isFirst);
+
+      // Opsi 2: Cadangan jika Opsi 1 ga jalan (panggil class screen-nya langsung)
+      // Navigator.pushAndRemoveUntil(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => const HistoryScreen()),
+      //   (route) => route.isFirst,
+      // );
+    }
   }
 
   @override
@@ -83,19 +98,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Apakah anda ingin keluar?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Text("Apakah anda ingin keluar?", style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text("Apakah kamu yakin ingin keluar? Kamu bisa mengecek status pembayaranmu nanti di halaman riwayat."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Tidak", style: TextStyle(color: Colors.grey)),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // Tutup dialog
-              Navigator.pop(context); // Keluar dari PaymentScreen
+              Navigator.pop(context); // Tutup dialog konfirmasi
+              _redirectToHistory();   // Pindahkan user langsung ke halaman riwayat
             },
-            child: const Text("Ya, Keluar", style: TextStyle(color: Colors.red)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade50,
+              elevation: 0,
+            ),
+            child: const Text("Ya, Keluar", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
