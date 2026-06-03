@@ -20,8 +20,8 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
   String _selectedJenis = 'Futsal';
   String _bookingDateString = '';
-  String _startTimeString = '16:00';
-  String _endTimeString = '17:00';
+  String _startTimeString = '';
+  String _endTimeString = '';
   int _bookingId = 0;
 
   @override
@@ -31,33 +31,35 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     if (widget.bookingData != null) {
       _bookingId = widget.bookingData['id'] ?? 0;
       
-      // ==================== FIX DETEKSI OTOMATIS DI SINI ====================
-      // Ambil nama lapangan secara kasar (bisa dari relasi atau teks langsung)
+      // 1. Deteksi Jenis Olahraga otomatis dari data booking
       String namaLapangan = (widget.bookingData['lapangan']?['nama_lapangan'] ?? 
                              widget.bookingData['nama_lapangan'] ?? 
                              widget.bookingData['lapangan_nama'] ?? 
                              "").toString().toLowerCase();
 
-      // Cek apakah nama lapangannya mengandung kata 'futsal'
       if (namaLapangan.contains('futsal')) {
         _selectedJenis = 'Futsal';
       } else if (namaLapangan.contains('badminton')) {
         _selectedJenis = 'Badminton';
       } else {
-        // Jika tidak ketemu keduanya, balik ke default relasi awal lu
         _selectedJenis = widget.bookingData['lapangan']?['jenis'] ?? 'Futsal';
       }
-      // =====================================================================
       
-      // Parsing aman string tanggal
+      // 2. Parsing Tanggal sesuai data booking
       String rawDate = widget.bookingData['booking_date'] ?? widget.bookingData['tanggal'] ?? '';
       _bookingDateString = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
       
-      // Ambil jam sewa
-      _startTimeString = widget.bookingData['start_time'] ?? '16:00';
-      _endTimeString = widget.bookingData['end_time'] ?? '17:00';
+      // 3. AMBIL JAM ASLI SESUAI DATA BOOKING USER
+      // Memotong string ke 5 karakter pertama (HH:MM) agar formatnya rapi tanpa detik (HH:MM:SS)
+      String rawStart = widget.bookingData['start_time'] ?? '';
+      String rawEnd = widget.bookingData['end_time'] ?? '';
+      
+      _startTimeString = rawStart.length >= 5 ? rawStart.substring(0, 5) : rawStart;
+      _endTimeString = rawEnd.length >= 5 ? rawEnd.substring(0, 5) : rawEnd;
     } else {
       _bookingDateString = "${DateTime.now().toLocal()}".split(' ')[0];
+      _startTimeString = '08:00';
+      _endTimeString = '09:00';
     }
   }
 
@@ -84,7 +86,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       }
 
       final newMatch = MatchModel(
-        id: _bookingId, // Mengirim booking_id sesuai validasi backend Laravel
+        id: _bookingId, 
         title: _titleController.text,
         jenis: _selectedJenis,
         tanggal: _bookingDateString,
@@ -103,7 +105,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Match Berhasil Dibuat!"), backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true); // Kembali ke HistoryScreen & refresh data
+          Navigator.pop(context, true); 
         }
       } else {
         if (mounted) {
@@ -153,8 +155,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               const SizedBox(height: 15),
 
-              // Dropdown Jenis Olahraga (Disabled/ReadOnly karena otomatis dari booking)
+              // Input Jenis Olahraga (Dinamis & ReadOnly)
               TextFormField(
+                key: Key("jenis_$_selectedJenis"), 
                 initialValue: _selectedJenis,
                 readOnly: true,
                 decoration: _inputDecoration("Jenis Olahraga", Icons.sports_soccer, enabled: false),
@@ -178,19 +181,21 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               const SizedBox(height: 15),
 
-              // Tampilan Tanggal Otomatis (ReadOnly)
+              // Input Tanggal (Dinamis & ReadOnly)
               TextFormField(
+                key: Key("tanggal_$_bookingDateString"), 
                 initialValue: "Tanggal Main: $_bookingDateString",
                 readOnly: true,
                 decoration: _inputDecoration("Tanggal", Icons.calendar_today, enabled: false),
               ),
               const SizedBox(height: 15),
 
-              // Tampilan Jam Otomatis (ReadOnly)
+              // Tampilan Jam (Otomatis Mengikuti Variabel _startTimeString & _endTimeString)
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
+                      key: Key("start_$_startTimeString"),
                       initialValue: _startTimeString,
                       readOnly: true,
                       decoration: _inputDecoration("Mulai", Icons.access_time, enabled: false),
@@ -199,6 +204,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   const SizedBox(width: 15),
                   Expanded(
                     child: TextFormField(
+                      key: Key("end_$_endTimeString"),
                       initialValue: _endTimeString,
                       readOnly: true,
                       decoration: _inputDecoration("Selesai", Icons.access_time, enabled: false),
