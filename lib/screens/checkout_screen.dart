@@ -43,17 +43,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     double cleanPrice =
         double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
+    // ==================== FIX LOGIKA JAM DI SINI ====================
+    // Pisahkan string "08:00, 09:00" menjadi List ['08:00', '09:00']
+    List<String> listJam = widget.jam.split(',').map((e) => e.trim()).toList();
+    
+    String jamMulai = listJam.first; // Mengambil jam paling awal (Contoh: "08:00")
+    String jamSelesai = "";
+
+    if (listJam.length > 1) {
+      // Jika booking lebih dari 1 jam, ambil jam terakhir (Contoh: "09:00") 
+      // Lalu asumsikan durasinya sampai jam berikutnya (Contoh: "10:00")
+      String jamTerakhir = listJam.last;
+      int hour = int.parse(jamTerakhir.split(':').first);
+      jamSelesai = "${(hour + 1).toString().padLeft(2, '0')}:00"; 
+    } else {
+      // Jika cuma booking 1 jam
+      int hour = int.parse(jamMulai.split(':').first);
+      jamSelesai = "${(hour + 1).toString().padLeft(2, '0')}:00";
+    }
+    // ================================================================
+
     try {
-      // Kita kirim "Midtrans" sebagai default payment method ke backend
       final result = await apiService.postBooking(
         userId: userId,
         lapanganId: widget.lapanganId,
         paymentMethod: "Midtrans", 
         date: widget.tanggal,
-        startTime: widget.jam,
-        endTime: "", 
+        startTime: jamMulai,      // Hasil perbaikan: "08:00"
+        endTime: jamSelesai,      // Hasil perbaikan: "10:00"
         totalPrice: cleanPrice,
-        hours: widget.jam.split(',').length,
+        hours: listJam.length,    // Jumlah durasi jam
       );
 
       if (result['status'] == true) {

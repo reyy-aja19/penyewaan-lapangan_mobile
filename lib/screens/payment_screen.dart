@@ -83,7 +83,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Batalkan Pembayaran?"),
+        title: const Text("Apakah anda ingin keluar?"),
         content: const Text("Apakah kamu yakin ingin keluar? Kamu bisa mengecek status pembayaranmu nanti di halaman riwayat."),
         actions: [
           TextButton(
