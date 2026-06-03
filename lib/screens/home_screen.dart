@@ -3,7 +3,9 @@ import 'detail_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:penyewaan_lapangan/models/field_model.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+// import 'package:flutter_svg/flutter_svg.dart';
+import '../models/notification_model.dart';
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -15,11 +17,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<FieldModel>> futureFields;
+  late Future<List<NotificationModel>> futureNotifications;
 
   @override
   void initState() {
     super.initState();
     futureFields = fetchFields();
+    futureNotifications = fetchNotifications();
   }
 
   // 🔥 Ambil data dari Laravel API
@@ -42,6 +46,28 @@ class _HomeScreenState extends State<HomeScreen> {
       return [];
     }
   }
+
+  Future<List<NotificationModel>> fetchNotifications() async {
+  try {
+    final response = await http.get(
+      Uri.parse(
+        'https://sportsfield.my.id/api/notifications/1',
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      return (data['data'] as List)
+          .map((e) => NotificationModel.fromJson(e))
+          .toList();
+    }
+  } catch (e) {
+    print(e);
+  }
+
+  return [];
+}
 
   @override
   Widget build(BuildContext context) {
@@ -293,13 +319,70 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: widget.onProfileTap,
-                child: const CircleAvatar(
-                  backgroundColor: Colors.white24,
-                  child: Icon(Icons.person, color: Colors.white),
+              Row(
+  children: [
+    FutureBuilder<List<NotificationModel>>(
+      future: futureNotifications,
+      builder: (context, snapshot) {
+
+        final count = snapshot.data?.length ?? 0;
+
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.notifications,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NotificationScreen(
+                      notifications:
+                          snapshot.data ?? [],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            if (count > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    "$count",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                    ),
+                  ),
                 ),
               ),
+          ],
+        );
+      },
+    ),
+
+    GestureDetector(
+      onTap: widget.onProfileTap,
+      child: const CircleAvatar(
+        backgroundColor: Colors.white24,
+        child: Icon(
+          Icons.person,
+          color: Colors.white,
+        ),
+      ),
+    ),
+  ],
+)
             ],
           ),
           const SizedBox(height: 25),
