@@ -31,8 +31,23 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     if (widget.bookingData != null) {
       _bookingId = widget.bookingData['id'] ?? 0;
       
-      // Ambil nama lapangan / jenis olahraga otomatis dari relasi database
-      _selectedJenis = widget.bookingData['lapangan']?['jenis'] ?? 'Futsal';
+      // ==================== FIX DETEKSI OTOMATIS DI SINI ====================
+      // Ambil nama lapangan secara kasar (bisa dari relasi atau teks langsung)
+      String namaLapangan = (widget.bookingData['lapangan']?['nama_lapangan'] ?? 
+                             widget.bookingData['nama_lapangan'] ?? 
+                             widget.bookingData['lapangan_nama'] ?? 
+                             "").toString().toLowerCase();
+
+      // Cek apakah nama lapangannya mengandung kata 'futsal'
+      if (namaLapangan.contains('futsal')) {
+        _selectedJenis = 'Futsal';
+      } else if (namaLapangan.contains('badminton')) {
+        _selectedJenis = 'Badminton';
+      } else {
+        // Jika tidak ketemu keduanya, balik ke default relasi awal lu
+        _selectedJenis = widget.bookingData['lapangan']?['jenis'] ?? 'Futsal';
+      }
+      // =====================================================================
       
       // Parsing aman string tanggal
       String rawDate = widget.bookingData['booking_date'] ?? widget.bookingData['tanggal'] ?? '';
