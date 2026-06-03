@@ -44,35 +44,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
     // ==================== FIX LOGIKA JAM DI SINI ====================
-    // Pisahkan string "08:00, 09:00" menjadi List ['08:00', '09:00']
+    // Memecah string "08:00, 09:00" menjadi List ['08:00', '09:00']
     List<String> listJam = widget.jam.split(',').map((e) => e.trim()).toList();
     
     String jamMulai = listJam.first; // Mengambil jam paling awal (Contoh: "08:00")
     String jamSelesai = "";
 
     if (listJam.length > 1) {
-      // Jika booking lebih dari 1 jam, ambil jam terakhir (Contoh: "09:00") 
-      // Lalu asumsikan durasinya sampai jam berikutnya (Contoh: "10:00")
+      // Jika booking lebih dari 1 jam, ambil jam terakhir (Contoh: "09:00")
+      // Lalu asumsikan durasinya sampai 1 jam setelah jam terakhir tersebut (Contoh: "10:00")
       String jamTerakhir = listJam.last;
       int hour = int.parse(jamTerakhir.split(':').first);
       jamSelesai = "${(hour + 1).toString().padLeft(2, '0')}:00"; 
     } else {
-      // Jika cuma booking 1 jam
+      // Jika cuma booking 1 jam (Contoh: "08:00"), jam selesai jadi "09:00"
       int hour = int.parse(jamMulai.split(':').first);
       jamSelesai = "${(hour + 1).toString().padLeft(2, '0')}:00";
     }
     // ================================================================
 
     try {
+      // Mengirimkan start_time dan end_time yang sudah rapi ke backend Laravel
       final result = await apiService.postBooking(
         userId: userId,
         lapanganId: widget.lapanganId,
         paymentMethod: "Midtrans", 
         date: widget.tanggal,
-        startTime: jamMulai,      // Hasil perbaikan: "08:00"
-        endTime: jamSelesai,      // Hasil perbaikan: "10:00"
+        startTime: jamMulai,      // Mengirim jam mulai asli (Contoh: "08:00")
+        endTime: jamSelesai,      // Mengirim jam selesai asli (Contoh: "10:00")
         totalPrice: cleanPrice,
-        hours: listJam.length,    // Jumlah durasi jam
+        hours: listJam.length,    // Durasi total (Contoh: 2)
       );
 
       if (result['status'] == true) {
