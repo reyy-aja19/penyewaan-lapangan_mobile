@@ -71,7 +71,7 @@ class MatchApi {
         },
       );
 
-      return response.statusCode == 200;
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       print('Exception saat join match: $e');
       return false;
