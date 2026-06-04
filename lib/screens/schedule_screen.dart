@@ -35,6 +35,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     "21:00",
   ];
 
+  DateTime selectedDate = DateTime.now();
   List<String> _selectedTimes = [];
   List<String> _bookedSlots = []; // Jam yang bakal diwarnain merah
   bool _isLoadingSlots = true;
@@ -47,37 +48,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // Fungsi ambil data jam dari Laravel
   Future<void> _fetchBookedSlots() async {
-    if (!mounted) return;
-    setState(() => _isLoadingSlots = true);
+  if (!mounted) return;
+  setState(() => _isLoadingSlots = true);
 
-    try {
-      // Ambil tanggal hari ini (Samain formatnya sama Laravel lo)
-      String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+  try {
+    String tanggalApi =
+        DateFormat('yyyy-MM-dd').format(selectedDate);
 
-      final apiService = ApiService();
-      final data = await apiService.getBookedSlots(widget.id, today);
+    final apiService = ApiService();
+    final data =
+        await apiService.getBookedSlots(widget.id, tanggalApi);
 
-      print("DEBUG: Jam terisi dari API -> $data");
+    print("DEBUG: Jam terisi dari API -> $data");
 
-      if (mounted) {
-        setState(() {
-          _bookedSlots = data;
-          _isLoadingSlots = false;
-        });
-      }
-    } catch (e) {
-      print("DEBUG: Error fetch slots -> $e");
-      if (mounted) {
-        setState(() => _isLoadingSlots = false);
-      }
+    if (mounted) {
+      setState(() {
+        _bookedSlots = data;
+        _isLoadingSlots = false;
+      });
+    }
+  } catch (e) {
+    print("DEBUG: Error fetch slots -> $e");
+    if (mounted) {
+      setState(() => _isLoadingSlots = false);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
-    DateTime now = DateTime.now();
-    String tanggalUntukAPI = DateFormat('yyyy-MM-dd').format(now);
-    String tanggalTampilan = DateFormat('dd MMMM yyyy').format(now);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -115,28 +114,47 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00A32A).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFF00A32A)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, color: Color(0xFF00A32A)),
-                const SizedBox(width: 15),
-                Text(
-                  tanggalTampilan,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
+          InkWell(
+  onTap: () async {
+  DateTime? picked = await showDatePicker(
+    context: context,
+    initialDate: selectedDate,
+    firstDate: DateTime.now(),
+    lastDate: DateTime.now().add(const Duration(days: 30)),
+  );
+
+  if (picked != null) {
+    setState(() {
+      selectedDate = picked;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 100));
+    _fetchBookedSlots();
+  }
+},
+  child: Container(
+    margin: const EdgeInsets.symmetric(horizontal: 20),
+    padding: const EdgeInsets.all(15),
+    decoration: BoxDecoration(
+      color: const Color(0xFF00A32A).withOpacity(0.1),
+      borderRadius: BorderRadius.circular(15),
+      border: Border.all(color: const Color(0xFF00A32A)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.calendar_today, color: Color(0xFF00A32A)),
+        const SizedBox(width: 15),
+        Text(
+          DateFormat('dd MMMM yyyy').format(selectedDate),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
+        ),
+      ],
+    ),
+  ),
+),
 
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -171,19 +189,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
                       return GestureDetector(
                         onTap: isBooked
-                            ? null
-                            : () {
-                                setState(() {
-                                  if (isSelected) {
-                                    _selectedTimes.remove(time);
-                                  } else {
-                                    if (_selectedTimes.length < 2) {
-                                      _selectedTimes.add(time);
-                                      _selectedTimes.sort();
-                                    }
-                                  }
-                                });
-                              },
+    ? () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Jam sudah dibooking orang lain"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    : () {
+        setState(() {
+          if (isSelected) {
+            _selectedTimes.remove(time);
+          } else {
+            if (_selectedTimes.length < 2) {
+              _selectedTimes.add(time);
+              _selectedTimes.sort();
+            }
+          }
+        });
+      },
                         child: Container(
                           decoration: BoxDecoration(
                             color: isBooked
@@ -198,19 +223,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   : Colors.grey.shade300,
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              time,
-                              style: TextStyle(
-                                color: (isBooked || isSelected)
-                                    ? Colors.white
-                                    : Colors.black,
-                                decoration: isBooked
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                            ),
-                          ),
+                         child: Center(
+  child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text(
+        time,
+        style: TextStyle(
+          color: (isBooked || isSelected) ? Colors.white : Colors.black,
+          decoration: isBooked ? TextDecoration.lineThrough : null,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+
+      if (isBooked)
+        const Text(
+          "Booked",
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.white,
+          ),
+        ),
+    ],
+  ),
+),
                         ),
                       );
                     },
@@ -237,7 +273,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           builder: (context) => CheckoutScreen(
                             lapanganId: widget.id,
                             namaLapangan: widget.namaLapangan,
-                            tanggal: tanggalUntukAPI,
+                            tanggal: DateFormat('yyyy-MM-dd').format(selectedDate),
                             jam: _selectedTimes.join(", "),
                             harga: hargaFinal,
                           ),

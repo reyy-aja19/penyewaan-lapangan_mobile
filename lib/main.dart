@@ -6,6 +6,12 @@ import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/change_password_screen.dart';
+import 'screens/terms_screen.dart';
+import 'screens/privacy_screen.dart';
+import 'screens/request_admin_screen.dart';
 // REVISI: Import payment_screen.dart dihapus dari sini karena sudah tidak digunakan di main.dart
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
@@ -44,18 +50,24 @@ class SportsFieldApp extends StatelessWidget {
         ),
       ),
       initialRoute: '/',
-      routes: {
-        '/': (context) => const LoginScreen(),
+routes: {
+  '/': (context) => const SplashScreen(),
+  '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const MainNavigation(),
         // REVISI: Route /schedule, /checkout, dan /payment dihapus dari sini
         // karena sekarang menggunakan Navigator.push manual untuk mengirim data dinamis.
         '/history': (context) => const HistoryScreen(),
         '/success_auth': (context) => const SuccessAuthScreen(),
-      },
-    );
-  }
-}
+        '/request-admin': (context) => const RequestAdminScreen(),
+         '/settings': (context) => const SettingsScreen(),
+          '/change-password': (context) => const ChangePasswordScreen(),
+          '/terms': (context) => const TermsScreen(),
+          '/privacy': (context) => const PrivacyScreen(),
+              },
+            );
+          }
+        }
 
 // --- Wrapper untuk Bottom Navigation ---
 class MainNavigation extends StatefulWidget {

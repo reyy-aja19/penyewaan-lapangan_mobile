@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'create_match_screen.dart'; // WAJIB IMPORT HALAMAN FORM MATCH KAMU
+import 'create_match_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -17,10 +17,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _historyFuture = _fetchBookingHistory(); // Panggil fungsi fetch data
+    _historyFuture = _fetchBookingHistory();
   }
 
-  // --- FUNGSI AMBIL DATA DARI API (PAKAI TOKEN) ---
   Future<List<dynamic>> _fetchBookingHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -34,21 +33,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
 
-        // FIX DISINI: Kalau Laravel lo ngembaliin { "data": [...] }
-        if (data is Map && data.containsKey('data')) {
-          return data['data'] as List<dynamic>;
-        }
-
-        // Kalau Laravel lo langsung ngembaliin [...]
-        return data as List<dynamic>;
-      } else {
-        throw Exception("Gagal load data: ${response.statusCode}");
+      if (data is Map && data.containsKey('data')) {
+        return data['data'];
       }
+
+      return data;
     } catch (e) {
-      throw Exception("Koneksi Error: $e");
+      throw Exception("Error: $e");
     }
   }
 
@@ -65,22 +58,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
-          title: const Text(
-            "Riwayat Sewa",
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
+          title: const Text("Riwayat Sewa"),
           backgroundColor: Colors.white,
-          elevation: 0,
+          foregroundColor: Colors.black,
           actions: [
             IconButton(
               onPressed: _refreshData,
-              icon: const Icon(Icons.refresh, color: Colors.black),
+              icon: const Icon(Icons.refresh),
             ),
           ],
           bottom: const TabBar(
-            labelColor: Color(0xFF00A32A),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Color(0xFF00A32A),
             tabs: [
               Tab(text: "Aktif"),
               Tab(text: "Selesai"),
@@ -90,40 +77,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
         body: FutureBuilder<List<dynamic>>(
           future: _historyFuture,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF00A32A)),
-              );
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text("Belum ada riwayat booking."));
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
             }
 
-            final allBookings = snapshot.data!;
+            final all = snapshot.data!;
 
-            // Filter Status
-            final activeBookings = allBookings
-                .where(
-                  (b) =>
-                      b['status'] == 'pending' ||
-                      b['status'] == 'Lunas' ||
-                      b['status'] == 'DP',
-                )
-                .toList();
+            final active = all.where((b) =>
+                b['status'] == 'pending' ||
+                b['status'] == 'Lunas' ||
+                b['status'] == 'DP').toList();
 
-            final finishedBookings = allBookings
-                .where(
-                  (b) => b['status'] == 'Selesai' || b['status'] == 'Batal',
-                )
-                .toList();
+            final done = all.where((b) =>
+                b['status'] == 'Selesai' ||
+                b['status'] == 'Batal').toList();
 
             return TabBarView(
               children: [
-                _buildList(activeBookings, "Tidak ada penyewaan aktif"),
-                _buildList(finishedBookings, "Belum ada riwayat selesai"),
+                _buildList(active),
+                _buildList(done),
               ],
             );
           },
@@ -132,136 +104,114 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildList(List<dynamic> bookings, String emptyMessage) {
+  Widget _buildList(List bookings) {
     if (bookings.isEmpty) {
-      return Center(
-        child: Text(emptyMessage, style: const TextStyle(color: Colors.grey)),
-      );
+      return const Center(child: Text("Tidak ada data"));
     }
 
-    return RefreshIndicator(
-      onRefresh: () async => _refreshData(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: bookings.length, // Baris onDestroy sudah dihapus aman di sini
-        itemBuilder: (context, index) {
-          final b = bookings[index];
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: bookings.length,
+      itemBuilder: (context, i) {
+        final b = bookings[i];
 
-          // Logika Warna Status
-          Color statusColor = const Color(0xFF00A32A);
-          if (b['status'] == 'pending') statusColor = Colors.orange;
-          if (b['status'] == 'Batal') statusColor = Colors.red;
-          if (b['status'] == 'Selesai') statusColor = Colors.grey;
+        Color statusColor = Colors.green;
+        if (b['status'] == 'pending') statusColor = Colors.orange;
+        if (b['status'] == 'Batal') statusColor = Colors.red;
+        if (b['status'] == 'Selesai') statusColor = Colors.grey;
 
-          return _historyCard(b, statusColor);
-        },
-      ),
+        return _historyCard(b, statusColor);
+      },
     );
   }
 
   Widget _historyCard(dynamic booking, Color statusColor) {
     String status = booking['status'] ?? 'pending';
-    String title = booking['lapangan']?['nama_lapangan'] ?? "Lapangan";
-    
-    // Penanganan substring aman untuk parsing tanggal dari database
-    String fullDate = booking['booking_date'] ?? booking['tanggal'] ?? "2026-01-01";
-    String dateParsed = fullDate.length >= 10 ? fullDate.substring(0, 10) : fullDate;
+
+    String namaLapangan =
+        booking['lapangan']?['nama'] ??
+        booking['lapangan']?['nama_lapangan'] ??
+        "Lapangan";
+
+    String date = booking['booking_date'] ?? "-";
+    String start = booking['start_time'] ?? "-";
+    String end = booking['end_time'] ?? "-";
+    String total = booking['total_price']?.toString() ?? "0";
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black12, blurRadius: 6),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // HEADER
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Expanded(
+                child: Text(
+                  namaLapangan,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
+                    horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: statusColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   status.toUpperCase(),
                   style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11),
                 ),
-              ),
-            ],
-          ),
-          const Divider(height: 25),
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                dateParsed,
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              const SizedBox(width: 20),
-              const Icon(Icons.access_time, size: 14, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                "${booking['start_time']} - ${booking['end_time'] ?? ''}",
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
-              ),
+              )
             ],
           ),
 
-          // --- KUNCI INTEGRASI: JIKA STATUS LUNAS, MUNCULKAN TOMBOL OPEN MATCH ---
-          if (status.toLowerCase() == 'lunas') ...[
-            const Divider(height: 25),
+          const SizedBox(height: 10),
+
+          Text("📅 $date"),
+          Text("⏰ $start - $end"),
+          Text("💰 Rp $total"),
+          
+          const SizedBox(height: 10),
+
+          if (status.toLowerCase() == 'lunas' &&
+              start != '-' &&
+              end != '-')
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  // Arahkan ke CreateMatchScreen dengan melempar data Map Booking ini
-                  final result = await Navigator.push(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CreateMatchScreen(bookingData: booking),
+                      builder: (context) =>
+                          CreateMatchScreen(bookingData: booking),
                     ),
                   );
-                  if (result == true) {
-                    _refreshData();
-                  }
                 },
-                icon: const Icon(Icons.sports_soccer, size: 18, color: Colors.white),
-                label: const Text(
-                  "BUAT OPEN MATCH",
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A32A),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  elevation: 0,
+                  backgroundColor: Colors.green,
+                ),
+                child: const Text(
+                  "BUAT OPEN MATCH",
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
-            ),
-          ]
+            )
         ],
       ),
     );

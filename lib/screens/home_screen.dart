@@ -18,6 +18,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<FieldModel>> futureFields;
   late Future<List<NotificationModel>> futureNotifications;
+  List<FieldModel> allFields = [];
+List<FieldModel> filteredFields = [];
+String selectedCategory = "Semua";
 
   @override
   void initState() {
@@ -35,9 +38,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return (data['data'] as List)
-            .map((json) => FieldModel.fromJson(json))
-            .toList();
+        List<FieldModel> fields = (data['data'] as List)
+    .map((json) => FieldModel.fromJson(json))
+    .toList();
+
+setState(() {
+  allFields = fields;
+  filteredFields = fields;
+});
+
+return fields;
       } else {
         throw Exception('Gagal ambil data');
       }
@@ -86,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: Text("Gagal mengambil data"));
           }
 
-          final dataFields = snapshot.data ?? [];
+          final dataFields = filteredFields;
 
           return SingleChildScrollView(
             child: Column(
@@ -108,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                _buildHorizontalList(context, dataFields),
+                _buildHorizontalList(context, filteredFields),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   child: Text(
@@ -116,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                _buildVerticalList(dataFields),
+                _buildVerticalList(filteredFields),
               ],
             ),
           );
@@ -387,26 +397,77 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 25),
           TextField(
-            decoration: InputDecoration(
-              hintText: "Cari lapangan...",
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
+  onChanged: (value) {
+    setState(() {
+      filteredFields = allFields.where((item) {
+        return item.name.toLowerCase().contains(value.toLowerCase());
+      }).toList();
+    });
+  },
+  decoration: InputDecoration(
+    hintText: "Cari venue...",
+    prefixIcon: const Icon(Icons.search),
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(15),
+      borderSide: BorderSide.none,
+    ),
+  ),
+)
         ],
       ),
     );
   }
 
   Widget _buildCategories() {
-    return const SizedBox(
-      height: 50,
-      child: Center(child: Text("Sepak Bola • Futsal • Badminton")),
-    );
-  }
+  List<String> categories = [
+    "Semua",
+    "Futsal",
+    "Badminton",
+  ];
+
+  return SizedBox(
+    height: 45,
+    child: ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final cat = categories[index];
+        final isActive = selectedCategory == cat;
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              selectedCategory = cat;
+
+              if (cat == "Semua") {
+                filteredFields = allFields;
+              } else {
+                filteredFields =
+                    allFields.where((e) => e.type == cat).toList();
+              }
+            });
+          },
+          child: Container(
+            margin: const EdgeInsets.only(right: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+            decoration: BoxDecoration(
+              color: isActive ? const Color(0xFF00A32A) : Colors.grey[200],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              cat,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
 }

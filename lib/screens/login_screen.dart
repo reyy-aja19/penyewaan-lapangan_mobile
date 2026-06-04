@@ -42,30 +42,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200) {
-        // 1. Simpan Token dan Data User ke SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
+     if (response.statusCode == 200) {
+  final data = jsonDecode(response.body);
 
-        // Simpan token untuk otentikasi API
-        await prefs.setString('token', data['access_token']);
+  print("LOGIN RESPONSE: $data");
 
-        // SIMPAN DATA USER (PENTING: Biar userId di Checkout gak invalid)
-        // Pastikan di API Laravel lo, 'user' dikirim di dalam response
-        if (data['user'] != null) {
-          await prefs.setString('user', jsonEncode(data['user']));
-        }
+  final prefs = await SharedPreferences.getInstance();
 
-        // 2. Navigasi ke Home
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      } else {
-        // Gagal login (email/pass salah)
-        _showSnackBar(
-          data['message'] ?? "Email atau Password salah!",
-          Colors.red,
-        );
-      }
+  final user = data['data'];
+
+  if (user == null) {
+    _showSnackBar("User tidak ditemukan di response", Colors.red);
+    return;
+  }
+
+  await prefs.setString('token', data['access_token'] ?? '');
+  await prefs.setInt('user_id', user['id']);
+  await prefs.setString('user', jsonEncode(user));
+
+  if (mounted) {
+    Navigator.pushReplacementNamed(context, '/home');
+  }
+} else {
+  _showSnackBar(
+    jsonDecode(response.body)['message'] ?? "Login gagal",
+    Colors.red,
+  );
+}
     } catch (e) {
       _showSnackBar("Gagal terhubung ke server: $e", Colors.red);
     } finally {
