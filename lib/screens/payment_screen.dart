@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+
 class PaymentScreen extends StatefulWidget {
   final String paymentUrl;
 
-  // Menerima redirect_url dari CheckoutScreen
-  const PaymentScreen({super.key, required this.paymentUrl});
+  const PaymentScreen({
+    super.key,
+    required this.paymentUrl,
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -28,15 +31,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
             setState(() => _isLoading = true);
           },
           onPageFinished: (String url) {
-            setState(() => _isLoading = false);
+  setState(() => _isLoading = false);
 
-            // TIPS: Jika backend Laravel kamu mengarahkan ke link sukses tertentu setelah bayar,
-            // kamu bisa deteksi di sini untuk otomatis memunculkan dialog sukses/pindah halaman.
-            // Contoh:
-            // if (url.contains('sportsfield.my.id/booking/success')) {
-            //   _showSuccessDialog(context);
-            // }
-          },
+  // 🔥 DETEKSI MIDTRANS SUCCESS
+  if (url.contains("status_code=200") ||
+      url.contains("transaction_status=settlement")) {
+    Navigator.pop(context, true); // SUCCESS
+  }
+
+  // ❌ jika gagal / close
+  if (url.contains("transaction_status=deny") ||
+      url.contains("transaction_status=cancel") ||
+      url.contains("transaction_status=expire")) {
+    Navigator.pop(context, false);
+  }
+},
           onNavigationRequest: (NavigationRequest request) {
             // Izinkan WebView berpindah ke halaman pembayaran Midtrans
             return NavigationDecision.navigate;

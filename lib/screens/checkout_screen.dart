@@ -27,6 +27,8 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _isLoading = false;
 
+  String paymentMethod = "Midtrans Full"; // default
+
   Future<void> _handlePayment() async {
     setState(() => _isLoading = true);
 
@@ -35,82 +37,88 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final String? userRaw = prefs.getString('user');
     int userId = 0;
+
     if (userRaw != null) {
       userId = jsonDecode(userRaw)['id'] ?? 0;
     }
 
-    // Bersihkan harga: Rp 180.000 -> 180000
     double cleanPrice =
         double.tryParse(widget.harga.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
-    // ==================== FIX LOGIKA JAM DI SINI ====================
-    // Memecah string "08:00, 09:00" menjadi List ['08:00', '09:00']
-    List<String> listJam = widget.jam.split(',').map((e) => e.trim()).toList();
-    
-    String jamMulai = listJam.first; // Mengambil jam paling awal (Contoh: "08:00")
-    String jamSelesai = "";
+   List<String> listJam = widget.jam
+    .split(',')
+    .map((e) => e.trim())
+    .where((e) => e.isNotEmpty)
+    .toList();
 
-    if (listJam.length > 1) {
-      // Jika booking lebih dari 1 jam, ambil jam terakhir (Contoh: "09:00")
-      // Lalu asumsikan durasinya sampai 1 jam setelah jam terakhir tersebut (Contoh: "10:00")
-      String jamTerakhir = listJam.last;
-      int hour = int.parse(jamTerakhir.split(':').first);
-      jamSelesai = "${(hour + 1).toString().padLeft(2, '0')}:00"; 
-    } else {
-      // Jika cuma booking 1 jam (Contoh: "08:00"), jam selesai jadi "09:00"
-      int hour = int.parse(jamMulai.split(':').first);
-      jamSelesai = "${(hour + 1).toString().padLeft(2, '0')}:00";
-    }
-    // ================================================================
+if (listJam.isEmpty) {
+  throw Exception("Jam tidak valid");
+}
+
+    String jamMulai = listJam.first;
+
+    String jamTerakhir = listJam.last;
+    int hourEnd = int.parse(jamTerakhir.split(':').first);
+    String jamSelesai =
+        "${(hourEnd + 1).toString().padLeft(2, '0')}:00";
 
     try {
-      // Mengirimkan start_time dan end_time yang sudah rapi ke backend Laravel
       final result = await apiService.postBooking(
         userId: userId,
         lapanganId: widget.lapanganId,
-        paymentMethod: "Midtrans", 
+        paymentMethod: paymentMethod, // 🔥 FIXED
         date: widget.tanggal,
-        startTime: jamMulai,      // Mengirim jam mulai asli (Contoh: "08:00")
-        endTime: jamSelesai,      // Mengirim jam selesai asli (Contoh: "10:00")
+        startTime: jamMulai,
+        endTime: jamSelesai,
         totalPrice: cleanPrice,
-        hours: listJam.length,    // Durasi total (Contoh: 2)
+        hours: listJam.length,
       );
 
       if (result['status'] == true) {
-        if (userRaw != null) {
-          Map<String, dynamic> userData = jsonDecode(userRaw);
-          userData['points'] =
-              result['current_points'] ?? (userData['points'] ?? 0) + 5;
-          await prefs.setString('user', jsonEncode(userData));
-        }
-
         if (mounted) {
+          // =========================
+          // CASH / OFFLINE
+          // =========================
+          if (paymentMethod == "Cash") {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/history',
+              (route) => route.isFirst,
+            );
+            return;
+          }
+
+          // =========================
+          // MIDTRANS (FULL / DP)
+          // =========================
           if (result['redirect_url'] != null) {
-            await Navigator.push(
+            final payResult = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PaymentScreen(
+                builder: (_) => PaymentScreen(
                   paymentUrl: result['redirect_url'],
                 ),
               ),
             );
 
-            if (mounted) {
-              Navigator.pushNamedAndRemoveUntil(
-                context, 
-                '/history', 
-                (route) => route.isFirst,
-              );
+            if (payResult != null && payResult == true) {
+              if (mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/history',
+                  (route) => route.isFirst,
+                );
+              }
             }
           } else {
-            _showSnackBar("URL Pembayaran tidak ditemukan.", Colors.red);
+            _showSnackBar("URL pembayaran tidak ditemukan", Colors.red);
           }
         }
       } else {
         _showSnackBar("Gagal: ${result['message']}", Colors.red);
       }
     } catch (e) {
-      _showSnackBar("Koneksi Error!", Colors.red);
+      _showSnackBar("Koneksi error!", Colors.red);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -145,54 +153,79 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 15),
+
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                  ),
-                ],
               ),
               child: Column(
                 children: [
                   _rowInfo("Lapangan", widget.namaLapangan),
-                  const Divider(height: 30),
+                  const Divider(),
                   _rowInfo("Tanggal", widget.tanggal),
-                  const Divider(height: 30),
+                  const Divider(),
                   _rowInfo("Jam", widget.jam),
-                  const Divider(height: 30),
-                  _rowInfo("Total Bayar", widget.harga, isPrice: true),
+                  const Divider(),
+                  _rowInfo("Total", widget.harga, isPrice: true),
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Pilih metode pembayaran favoritmu di halaman selanjutnya.",
-                      style: TextStyle(fontSize: 13, color: Colors.blueAccent),
-                    ),
-                  ),
-                ],
-              ),
+
+            const Text(
+              "Pilih Metode Pembayaran",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+
+            RadioListTile(
+              value: "Midtrans Full",
+              groupValue: paymentMethod,
+              title: const Text("Full Payment (Midtrans)"),
+              onChanged: (v) {
+                setState(() => paymentMethod = v.toString());
+              },
+            ),
+
+            RadioListTile(
+              value: "DP",
+              groupValue: paymentMethod,
+              title: const Text("DP 50%"),
+              onChanged: (v) {
+                setState(() => paymentMethod = v.toString());
+              },
+            ),
+
+            RadioListTile(
+              value: "Cash",
+              groupValue: paymentMethod,
+              title: const Text("Bayar di Tempat"),
+              onChanged: (v) {
+                setState(() => paymentMethod = v.toString());
+              },
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildPayButton(context),
+
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(20),
+        child: ElevatedButton(
+          onPressed: _isLoading ? null : _handlePayment,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00A32A),
+            minimumSize: const Size(double.infinity, 55),
+          ),
+          child: _isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text(
+                  "Bayar Sekarang",
+                  style: TextStyle(color: Colors.white),
+                ),
+        ),
+      ),
     );
   }
 
@@ -200,53 +233,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: isPrice ? 18 : 14,
-              color: isPrice ? const Color(0xFF00A32A) : Colors.black,
-            ),
+        Text(label),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isPrice ? Colors.green : Colors.black,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPayButton(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      color: Colors.white,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handlePayment,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF00A32A),
-          minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : const Text(
-                "Lanjut ke Pembayaran",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-      ),
     );
   }
 }
