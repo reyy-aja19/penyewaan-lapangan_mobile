@@ -108,4 +108,64 @@ class MatchApi {
       };
     }
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | AMBIL SEMUA PESAN CHAT (GET) - BARU 💬
+  |--------------------------------------------------------------------------
+  |*/
+  static Future<List<dynamic>> fetchMessages(int matchId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/matches/$matchId/messages'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['status'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Gagal mengambil chat.');
+      }
+    } catch (e) {
+      print('Exception fetchMessages: $e');
+      rethrow;
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | KIRIM PESAN CHAT BARU (POST) - BARU 🚀
+  |--------------------------------------------------------------------------
+  |*/
+  static Future<bool> sendMessage(int matchId, String message) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/matches/$matchId/messages'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'message': message,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      return response.statusCode == 201 && data['status'] == true;
+    } catch (e) {
+      print('Exception sendMessage: $e');
+      return false;
+    }
+  }
 }

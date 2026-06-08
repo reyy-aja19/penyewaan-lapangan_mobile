@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match_model.dart';
 import '../services/match_api.dart';
+import 'chat_screen.dart'; // FIX: Impor halaman chat baru agar bisa dipanggil
 
 class MatchScreen extends StatefulWidget {
   const MatchScreen({super.key});
@@ -30,7 +31,6 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   void _refreshData() {
-    // FIX: Bersihkan snackbar eror merah yang menggantung saat refresh data dilakukan
     ScaffoldMessenger.of(context).clearSnackBars();
     setState(() {
       futureMatches = MatchApi.fetchMatches();
@@ -38,7 +38,6 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   void _handleJoin(int matchId) async {
-    // FIX: Bersihkan notifikasi merah dari aksi sebelumnya agar tidak menumpuk di bawah layar
     ScaffoldMessenger.of(context).clearSnackBars();
 
     // Tampilkan loading sebentar
@@ -50,7 +49,6 @@ class _MatchScreenState extends State<MatchScreen> {
       ),
     );
 
-    // Memanggil API joinMatch dan menangkap map response data dari server
     Map<String, dynamic> result = await MatchApi.joinMatch(matchId);
 
     if (mounted) Navigator.pop(context); // Tutup loading dialog
@@ -70,10 +68,9 @@ class _MatchScreenState extends State<MatchScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            // Menampilkan pesan spesifik asli dari backend Laravel secara dinamis
             content: Text(result['message'] ?? "Gagal bergabung ke match."),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3), // Membatasi durasi nempel bar eror
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -310,7 +307,38 @@ class _MatchScreenState extends State<MatchScreen> {
               match.deskripsi.isEmpty ? "No Description" : match.deskripsi,
               style: TextStyle(color: Colors.grey[600]),
             ),
-            const SizedBox(height: 30),
+            
+            // FIX: Tombol "MASUK GRUP CHAT MATCH" ditaruh di dalam bottom sheet detail pertandingan
+            const SizedBox(height: 25),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // Tutup bottom sheet terlebih dahulu
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(
+                        matchId: match.id,
+                        matchTitle: match.title,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text("MASUK GRUP CHAT MATCH"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http; // Tambahkan ini
-import 'dart:convert'; // Tambahkan ini
-import 'package:shared_preferences/shared_preferences.dart'; // Tambahkan ini
+import 'package:http/http.dart' as http; 
+import 'dart:convert'; 
+import 'package:shared_preferences/shared_preferences.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,35 +40,36 @@ class _LoginScreenState extends State<LoginScreen> {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        // FIX: Hanya decode sekali saja di sini untuk menghilangkan warning unused_local_variable
+        final data = jsonDecode(response.body);
 
-     if (response.statusCode == 200) {
-  final data = jsonDecode(response.body);
+        print("LOGIN RESPONSE: $data");
 
-  print("LOGIN RESPONSE: $data");
+        final prefs = await SharedPreferences.getInstance();
+        final user = data['data'];
 
-  final prefs = await SharedPreferences.getInstance();
+        if (user == null) {
+          _showSnackBar("User tidak ditemukan di response", Colors.red);
+          return;
+        }
 
-  final user = data['data'];
+        await prefs.setString('token', data['access_token'] ?? '');
+        await prefs.setInt('user_id', user['id']);
+        await prefs.setString('user', jsonEncode(user));
+        
+        // FIX TAMBAHAN: Simpan user_name secara eksplisit agar dikenali oleh ChatScreen
+        await prefs.setString('user_name', user['name'] ?? '');
 
-  if (user == null) {
-    _showSnackBar("User tidak ditemukan di response", Colors.red);
-    return;
-  }
-
-  await prefs.setString('token', data['access_token'] ?? '');
-  await prefs.setInt('user_id', user['id']);
-  await prefs.setString('user', jsonEncode(user));
-
-  if (mounted) {
-    Navigator.pushReplacementNamed(context, '/home');
-  }
-} else {
-  _showSnackBar(
-    jsonDecode(response.body)['message'] ?? "Login gagal",
-    Colors.red,
-  );
-}
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } else {
+        _showSnackBar(
+          jsonDecode(response.body)['message'] ?? "Login gagal",
+          Colors.red,
+        );
+      }
     } catch (e) {
       _showSnackBar("Gagal terhubung ke server: $e", Colors.red);
     } finally {
@@ -76,10 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- FUNGSI LOGIN GOOGLE (Sudah Diperbaiki Dengan serverClientId) ---
+  // --- FUNGSI LOGIN GOOGLE ---
   Future<void> _handleGoogleSignIn() async {
     try {
-      // PERBAIKAN: Menyisipkan Web Client ID dari file google-services.json kelompokmu
       final GoogleSignIn googleSignIn = GoogleSignIn(
         serverClientId: '844099394384-tk6tsrvnppuvuafu4eshqfhq2m1hl9eu.apps.googleusercontent.com',
       );
@@ -251,12 +251,12 @@ class _LoginScreenState extends State<LoginScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         backgroundColor: Colors.white,
       ),
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.g_mobiledata, color: Colors.red, size: 30),
-          const SizedBox(width: 12),
-          const Text(
+          Icon(Icons.g_mobiledata, color: Colors.red, size: 30),
+          SizedBox(width: 12),
+          Text(
             "Masuk Dengan Google",
             style: TextStyle(
               color: Colors.black87,

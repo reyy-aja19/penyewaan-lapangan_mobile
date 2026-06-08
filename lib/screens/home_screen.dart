@@ -3,7 +3,6 @@ import 'detail_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:penyewaan_lapangan/models/field_model.dart';
-// import 'package:flutter_svg/flutter_svg.dart';
 import '../models/notification_model.dart';
 import 'notification_screen.dart';
 
@@ -19,8 +18,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<List<FieldModel>> futureFields;
   late Future<List<NotificationModel>> futureNotifications;
   List<FieldModel> allFields = [];
-List<FieldModel> filteredFields = [];
-String selectedCategory = "Semua";
+  List<FieldModel> filteredFields = [];
+  String selectedCategory = "Semua";
 
   @override
   void initState() {
@@ -39,15 +38,15 @@ String selectedCategory = "Semua";
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         List<FieldModel> fields = (data['data'] as List)
-    .map((json) => FieldModel.fromJson(json))
-    .toList();
+            .map((json) => FieldModel.fromJson(json))
+            .toList();
 
-setState(() {
-  allFields = fields;
-  filteredFields = fields;
-});
+        setState(() {
+          allFields = fields;
+          filteredFields = fields;
+        });
 
-return fields;
+        return fields;
       } else {
         throw Exception('Gagal ambil data');
       }
@@ -58,26 +57,26 @@ return fields;
   }
 
   Future<List<NotificationModel>> fetchNotifications() async {
-  try {
-    final response = await http.get(
-      Uri.parse(
-        'https://sportsfield.my.id/api/notifications/1',
-      ),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://sportsfield.my.id/api/notifications/1',
+        ),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      return (data['data'] as List)
-          .map((e) => NotificationModel.fromJson(e))
-          .toList();
+        return (data['data'] as List)
+            .map((e) => NotificationModel.fromJson(e))
+            .toList();
+      }
+    } catch (e) {
+      print(e);
     }
-  } catch (e) {
-    print(e);
-  }
 
-  return [];
-}
+    return [];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +95,7 @@ return fields;
             return const Center(child: Text("Gagal mengambil data"));
           }
 
+          // FIX: Variabel ini kita manfaatkan untuk list di bawahnya agar tidak mubazir 🚀
           final dataFields = filteredFields;
 
           return SingleChildScrollView(
@@ -118,7 +118,7 @@ return fields;
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                _buildHorizontalList(context, filteredFields),
+                _buildHorizontalList(context, dataFields), // <-- Diubah menggunakan dataFields
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   child: Text(
@@ -126,7 +126,7 @@ return fields;
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                _buildVerticalList(filteredFields),
+                _buildVerticalList(dataFields), // <-- Diubah menggunakan dataFields
               ],
             ),
           );
@@ -175,7 +175,6 @@ return fields;
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // REVISI: Mengubah SvgPicture menjadi Image.network karena formatnya JPG/PNG
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(20),
@@ -185,7 +184,6 @@ return fields;
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  // Indikator loading saat men-download gambar dari VPS
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
@@ -203,7 +201,6 @@ return fields;
                       ),
                     );
                   },
-                  // Tampilan cadangan jika link eror atau data kosong
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 120,
                     color: Colors.grey[200],
@@ -330,144 +327,141 @@ return fields;
                 ],
               ),
               Row(
-  children: [
-    FutureBuilder<List<NotificationModel>>(
-      future: futureNotifications,
-      builder: (context, snapshot) {
+                children: [
+                  FutureBuilder<List<NotificationModel>>(
+                    future: futureNotifications,
+                    builder: (context, snapshot) {
+                      final count = snapshot.data?.length ?? 0;
 
-        final count = snapshot.data?.length ?? 0;
-
-        return Stack(
-          children: [
-            IconButton(
-              icon: const Icon(
-                Icons.notifications,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => NotificationScreen(
-                      notifications:
-                          snapshot.data ?? [],
+                      return Stack(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.notifications,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => NotificationScreen(
+                                    notifications: snapshot.data ?? [],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          if (count > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  "$count",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  GestureDetector(
+                    onTap: widget.onProfileTap,
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.white24,
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-
-            if (count > 0)
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    "$count",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    ),
-
-    GestureDetector(
-      onTap: widget.onProfileTap,
-      child: const CircleAvatar(
-        backgroundColor: Colors.white24,
-        child: Icon(
-          Icons.person,
-          color: Colors.white,
-        ),
-      ),
-    ),
-  ],
-)
+                ],
+              )
             ],
           ),
           const SizedBox(height: 25),
           TextField(
-  onChanged: (value) {
-    setState(() {
-      filteredFields = allFields.where((item) {
-        return item.name.toLowerCase().contains(value.toLowerCase());
-      }).toList();
-    });
-  },
-  decoration: InputDecoration(
-    hintText: "Cari venue...",
-    prefixIcon: const Icon(Icons.search),
-    filled: true,
-    fillColor: Colors.white,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(15),
-      borderSide: BorderSide.none,
-    ),
-  ),
-)
+            onChanged: (value) {
+              setState(() {
+                filteredFields = allFields.where((item) {
+                  return item.name.toLowerCase().contains(value.toLowerCase());
+                }).toList();
+              });
+            },
+            decoration: InputDecoration(
+              hintText: "Cari venue...",
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          )
         ],
       ),
     );
   }
 
   Widget _buildCategories() {
-  List<String> categories = [
-    "Semua",
-    "Futsal",
-    "Badminton",
-  ];
+    List<String> categories = [
+      "Semua",
+      "Futsal",
+      "Badminton",
+    ];
 
-  return SizedBox(
-    height: 45,
-    child: ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final cat = categories[index];
-        final isActive = selectedCategory == cat;
+    return SizedBox(
+      height: 45,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final isActive = selectedCategory == cat;
 
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedCategory = cat;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedCategory = cat;
 
-              if (cat == "Semua") {
-                filteredFields = allFields;
-              } else {
-                filteredFields =
-                    allFields.where((e) => e.type == cat).toList();
-              }
-            });
-          },
-          child: Container(
-            margin: const EdgeInsets.only(right: 10),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-            decoration: BoxDecoration(
-              color: isActive ? const Color(0xFF00A32A) : Colors.grey[200],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              cat,
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.black,
+                if (cat == "Semua") {
+                  filteredFields = allFields;
+                } else {
+                  filteredFields =
+                      allFields.where((e) => e.type == cat).toList();
+                }
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+              decoration: BoxDecoration(
+                color: isActive ? const Color(0xFF00A32A) : Colors.grey[200],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                cat,
+                style: TextStyle(
+                  color: isActive ? Colors.white : Colors.black,
+                ),
               ),
             ),
-          ),
-        );
-      },
-    ),
-  );
-}
+          );
+        },
+      ),
+    );
+  }
 }
