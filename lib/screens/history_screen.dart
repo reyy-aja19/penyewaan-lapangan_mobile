@@ -21,10 +21,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   @override
-void didUpdateWidget(covariant HistoryScreen oldWidget) {
-  super.didUpdateWidget(oldWidget);
-  _refreshData();
-}
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _refreshData();
+  }
 
   Future<List<dynamic>> _fetchBookingHistory() async {
     try {
@@ -74,6 +74,9 @@ void didUpdateWidget(covariant HistoryScreen oldWidget) {
             ),
           ],
           bottom: const TabBar(
+            labelColor: Colors.green,
+            unselectedLabelColor: Colors.black54,
+            indicatorColor: Colors.green,
             tabs: [
               Tab(text: "Aktif"),
               Tab(text: "Selesai"),
@@ -83,23 +86,29 @@ void didUpdateWidget(covariant HistoryScreen oldWidget) {
         body: FutureBuilder<List<dynamic>>(
           future: _historyFuture,
           builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text("Gagal memuat data: ${snapshot.error}"));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(child: Text("Belum ada data booking, booking sekarang!!"));
             }
 
             final all = snapshot.data!;
 
-           final active = all.where((b) =>
-    b['status'].toString().toLowerCase() == 'pending' ||
-    b['status'].toString().toLowerCase() == 'lunas' ||
-    b['status'].toString().toLowerCase() == 'dp'
-).toList();
+            // Tab Aktif: Pending, DP, Lunas, atau sedang Check In
+            final active = all.where((b) {
+              final st = b['status'].toString().toLowerCase();
+              return st == 'pending' || st == 'lunas' || st == 'dp' || st == 'check in';
+            }).toList();
 
-            final done = all.where((b) =>
-    b['status'].toString().toLowerCase() == 'selesai' ||
-    b['status'].toString().toLowerCase() == 'batal' ||
-    b['status'].toString().toLowerCase() == 'expired'
-).toList();
+            // Tab Selesai: Check Out, Batal, atau Expired
+            final done = all.where((b) {
+              final st = b['status'].toString().toLowerCase();
+              return st == 'check out' || st == 'selesai' || st == 'batal' || st == 'expired';
+            }).toList();
 
             return TabBarView(
               children: [
@@ -115,7 +124,7 @@ void didUpdateWidget(covariant HistoryScreen oldWidget) {
 
   Widget _buildList(List bookings) {
     if (bookings.isEmpty) {
-      return const Center(child: Text("Belum ada data booking, booking sekarang!!"));
+      return const Center(child: Text("Tidak ada transaksi di kategori ini."));
     }
 
     return ListView.builder(
@@ -123,22 +132,23 @@ void didUpdateWidget(covariant HistoryScreen oldWidget) {
       itemCount: bookings.length,
       itemBuilder: (context, i) {
         final b = bookings[i];
-
         String status = b['status'].toString().toLowerCase();
+        
+        Color statusColor = Colors.grey;
 
-Color statusColor = Colors.green;
-
-if (status == 'pending') {
-  statusColor = Colors.orange;
-}
-
-if (status == 'batal' || status == 'expired') {
-  statusColor = Colors.red;
-}
-
-if (status == 'selesai') {
-  statusColor = Colors.grey;
-}
+        if (status == 'pending') {
+          statusColor = Colors.orange;
+        } else if (status == 'dp') {
+          statusColor = Colors.amber;
+        } else if (status == 'lunas') {
+          statusColor = Colors.green;
+        } else if (status == 'check in') {
+          statusColor = Colors.blue;
+        } else if (status == 'check out' || status == 'selesai') {
+          statusColor = Colors.blueGrey;
+        } else if (status == 'batal' || status == 'expired') {
+          statusColor = Colors.red;
+        }
 
         return _historyCard(b, statusColor);
       },
@@ -146,10 +156,14 @@ if (status == 'selesai') {
   }
 
   Widget _historyCard(dynamic booking, Color statusColor) {
-    String status = booking['status'] ?? 'pending';
+    String rawStatus = booking['status'] ?? 'pending';
+    String displayStatus = rawStatus;
 
-    String namaLapangan =
-        booking['lapangan']?['nama'] ??
+    // Menyamakan teks tampilan status dengan web admin
+    if (rawStatus.toLowerCase() == 'check in') displayStatus = 'Sedang Main';
+    if (rawStatus.toLowerCase() == 'check out') displayStatus = 'Selesai';
+
+    String namaLapangan = booking['lapangan']?['nama'] ??
         booking['lapangan']?['nama_lapangan'] ??
         "Lapangan";
 
@@ -165,52 +179,42 @@ if (status == 'selesai') {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
                   namaLapangan,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
+                  color: statusColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  status.toUpperCase(),
-                  style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11),
+                  displayStatus.toUpperCase(),
+                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
                 ),
               )
             ],
           ),
-
           const SizedBox(height: 10),
-
           Text("📅 $date"),
           Text("⏰ $start - $end"),
           Text("💰 Rp $total"),
-          
           const SizedBox(height: 10),
-
-          if (status.toLowerCase() == 'lunas' &&
-              start != '-' &&
-              end != '-')
+          
+          // Tombol Open Match hanya aktif jika status murni LUNAS
+          if (rawStatus.toLowerCase() == 'lunas' && start != '-' && end != '-')
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -218,17 +222,17 @@ if (status == 'selesai') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          CreateMatchScreen(bookingData: booking),
+                      builder: (context) => CreateMatchScreen(bookingData: booking),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text(
                   "BUAT OPEN MATCH",
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             )

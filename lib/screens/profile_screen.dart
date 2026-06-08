@@ -237,6 +237,19 @@ _buildMenuItem(
 
 const SizedBox(height: 20),
 
+// ================= VENUE =================
+
+_buildMenuItem(
+  Icons.store,
+  "Tambah Venue",
+  () => Navigator.pushNamed(
+    context,
+    '/request-admin',
+  ),
+),
+
+const SizedBox(height: 20),
+
 // ================= TENTANG =================
 _buildMenuItem(
   Icons.description,
