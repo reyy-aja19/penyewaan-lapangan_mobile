@@ -1,40 +1,50 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // Tambahin ini
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match_model.dart';
 
 class MatchApi {
   static const String baseUrl = 'https://sportsfield.my.id/api';
 
-  // Ambil semua data match
+  /*
+  |--------------------------------------------------------------------------
+  | GET ALL OPEN MATCHES
+  |--------------------------------------------------------------------------
+  |*/
   static Future<List<MatchModel>> fetchMatches() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(
-      'token',
-    ); // Ambil token yang lo simpen pas login
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/matches'),
-      headers: {
-        'Authorization':
-            'Bearer $token', // WAJIB ADA karena rute ini diproteksi Sanctum
-        'Accept': 'application/json',
-      },
-    );
+      final response = await http.get(
+        Uri.parse('$baseUrl/matches'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      // Sesuaikan dengan response Laravel lo (apakah dibungkus key 'data' atau langsung list)
-      final List listData = (data is Map) ? data['data'] : data;
+        // Menangani response jika dibungkus dalam key 'data' atau berbentuk list langsung
+        final List listData = (data is Map) ? data['data'] : data;
 
-      return listData.map((json) => MatchModel.fromJson(json)).toList();
-    } else {
-      throw Exception('Gagal mengambil data match: ${response.statusCode}');
+        return listData.map((json) => MatchModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Gagal mengambil data match: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Exception saat fetch matches: $e');
+      rethrow;
     }
   }
 
-  // Create Match
+  /*
+  |--------------------------------------------------------------------------
+  | CREATE OPEN MATCH
+  |--------------------------------------------------------------------------
+  |*/
   static Future<bool> createMatch(MatchModel match) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -45,7 +55,7 @@ class MatchApi {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer $token', // Tambahin token juga di sini
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode(match.toJson()),
       );
@@ -57,8 +67,12 @@ class MatchApi {
     }
   }
 
-  // Join Match
-  static Future<bool> joinMatch(int matchId) async {
+  /*
+  |--------------------------------------------------------------------------
+  | JOIN AN OPEN MATCH (Menangkap Response Pesan Dinamis dari Backend)
+  |--------------------------------------------------------------------------
+  |*/
+  static Future<Map<String, dynamic>> joinMatch(int matchId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -67,14 +81,31 @@ class MatchApi {
         Uri.parse('$baseUrl/matches/$matchId/join'),
         headers: {
           'Accept': 'application/json',
-          'Authorization': 'Bearer $token', // Tambahin token juga di sini
+          'Authorization': 'Bearer $token',
         },
       );
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      // Mengubah string JSON dari body response menjadi Map
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Berhasil bergabung ke dalam match!',
+        };
+      } else {
+        // Mengembalikan pesan error spesifik yang dikirim oleh Controller Laravel
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Gagal bergabung ke match.',
+        };
+      }
     } catch (e) {
       print('Exception saat join match: $e');
-      return false;
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan koneksi atau server: $e',
+      };
     }
   }
 }

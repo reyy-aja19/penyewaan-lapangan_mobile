@@ -106,7 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildList(List bookings) {
     if (bookings.isEmpty) {
-      return const Center(child: Text("Tidak ada data"));
+      return const Center(child: Text("Belum ada data booking, booking sekarang!!"));
     }
 
     return ListView.builder(

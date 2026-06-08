@@ -30,41 +30,50 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   void _refreshData() {
+    // FIX: Bersihkan snackbar eror merah yang menggantung saat refresh data dilakukan
+    ScaffoldMessenger.of(context).clearSnackBars();
     setState(() {
       futureMatches = MatchApi.fetchMatches();
     });
   }
 
   void _handleJoin(int matchId) async {
+    // FIX: Bersihkan notifikasi merah dari aksi sebelumnya agar tidak menumpuk di bawah layar
+    ScaffoldMessenger.of(context).clearSnackBars();
+
     // Tampilkan loading sebentar
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00A32A)),
+      ),
     );
 
-    bool success = await MatchApi.joinMatch(matchId);
+    // Memanggil API joinMatch dan menangkap map response data dari server
+    Map<String, dynamic> result = await MatchApi.joinMatch(matchId);
 
-    if (mounted) Navigator.pop(context); // Tutup loading
+    if (mounted) Navigator.pop(context); // Tutup loading dialog
 
-    if (success) {
+    if (result['success'] == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Berhasil bergabung ke match! 🔥"),
+          SnackBar(
+            content: Text(result['message'] ?? "Berhasil bergabung ke match! 🔥"),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
-        _refreshData(); // Refresh list agar jumlah pemain update
+        _refreshData(); // Refresh list agar jumlah pemain update otomatis
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Gagal join. Mungkin match penuh atau sudah bergabung.",
-            ),
+          SnackBar(
+            // Menampilkan pesan spesifik asli dari backend Laravel secara dinamis
+            content: Text(result['message'] ?? "Gagal bergabung ke match."),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3), // Membatasi durasi nempel bar eror
           ),
         );
       }
@@ -135,7 +144,6 @@ class _MatchScreenState extends State<MatchScreen> {
           );
         },
       ),
-      // REVISI: FloatingActionButton dihapus total agar pembuatan Open Match wajib lewat kartu History yang berstatus Lunas.
     );
   }
 
@@ -199,7 +207,7 @@ class _MatchScreenState extends State<MatchScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "${match.tanggal.substring(0, 10)} • ${match.startTime}",
+                              "${match.tanggal.length >= 10 ? match.tanggal.substring(0, 10) : match.tanggal} • ${match.startTime}",
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
@@ -241,7 +249,12 @@ class _MatchScreenState extends State<MatchScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(25),
         child: Column(
@@ -275,7 +288,7 @@ class _MatchScreenState extends State<MatchScreen> {
             _detailRow(
               Icons.calendar_today,
               "Tanggal",
-              match.tanggal.substring(0, 10),
+              match.tanggal.length >= 10 ? match.tanggal.substring(0, 10) : match.tanggal,
             ),
             _detailRow(
               Icons.access_time,
