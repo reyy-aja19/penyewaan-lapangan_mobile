@@ -20,6 +20,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _historyFuture = _fetchBookingHistory();
   }
 
+  @override
+void didUpdateWidget(covariant HistoryScreen oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  _refreshData();
+}
+
   Future<List<dynamic>> _fetchBookingHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -83,14 +89,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             final all = snapshot.data!;
 
-            final active = all.where((b) =>
-                b['status'] == 'pending' ||
-                b['status'] == 'Lunas' ||
-                b['status'] == 'DP').toList();
+           final active = all.where((b) =>
+    b['status'].toString().toLowerCase() == 'pending' ||
+    b['status'].toString().toLowerCase() == 'lunas' ||
+    b['status'].toString().toLowerCase() == 'dp'
+).toList();
 
             final done = all.where((b) =>
-                b['status'] == 'Selesai' ||
-                b['status'] == 'Batal').toList();
+    b['status'].toString().toLowerCase() == 'selesai' ||
+    b['status'].toString().toLowerCase() == 'batal' ||
+    b['status'].toString().toLowerCase() == 'expired'
+).toList();
 
             return TabBarView(
               children: [
@@ -115,10 +124,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
       itemBuilder: (context, i) {
         final b = bookings[i];
 
-        Color statusColor = Colors.green;
-        if (b['status'] == 'pending') statusColor = Colors.orange;
-        if (b['status'] == 'Batal') statusColor = Colors.red;
-        if (b['status'] == 'Selesai') statusColor = Colors.grey;
+        String status = b['status'].toString().toLowerCase();
+
+Color statusColor = Colors.green;
+
+if (status == 'pending') {
+  statusColor = Colors.orange;
+}
+
+if (status == 'batal' || status == 'expired') {
+  statusColor = Colors.red;
+}
+
+if (status == 'selesai') {
+  statusColor = Colors.grey;
+}
 
         return _historyCard(b, statusColor);
       },
