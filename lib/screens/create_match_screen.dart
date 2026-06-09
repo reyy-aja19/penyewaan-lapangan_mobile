@@ -27,44 +27,90 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   @override
   void initState() {
     super.initState();
-    // Inisialisasi data otomatis jika mendapat lemparan data dari HistoryScreen
+    
+    // Validasi & Ekstraksi Data dari JSON Laravel Booking
     if (widget.bookingData != null) {
+      // 1. Ambil ID Booking Asli (Penting untuk mencocokkan relasi di API Match)
       _bookingId = widget.bookingData['id'] ?? 0;
       
-      // 1. Deteksi Jenis Olahraga otomatis dari data booking
-      String namaLapangan = (widget.bookingData['lapangan']?['nama_lapangan'] ?? 
-                             widget.bookingData['nama_lapangan'] ?? 
-                             widget.bookingData['lapangan_nama'] ?? 
-                             "").toString().toLowerCase();
+      // 2. Ekstraksi Nama Lapangan dari Objek Relasi Lapangan Laravel
+      final lapanganData = widget.bookingData['lapangan'];
+      String namaLapangan = "";
 
-      if (namaLapangan.contains('futsal')) {
-        _selectedJenis = 'Futsal';
-      } else if (namaLapangan.contains('badminton')) {
-        _selectedJenis = 'Badminton';
+      if (lapanganData != null) {
+        namaLapangan = (lapanganData['nama_lapangan'] ?? 
+                        lapanganData['nama'] ?? 
+                        lapanganData['nama_venue'] ?? 
+                        "").toString().toLowerCase();
       } else {
-        _selectedJenis = widget.bookingData['lapangan']?['jenis'] ?? 'Futsal';
+        namaLapangan = (widget.bookingData['nama_lapangan'] ?? 
+                        widget.bookingData['lapangan_nama'] ?? 
+                        "").toString().toLowerCase();
+      }
+
+      // 3. Deteksi Pintar Jenis Olahraga Berdasarkan Nama Lapangan
+      if (namaLapangan.contains('futsal') || namaLapangan.contains('bola')) {
+        _selectedJenis = 'Futsal';
+      } else if (namaLapangan.contains('badminton') || namaLapangan.contains('bulutangkis') || namaLapangan.contains('badmin')) {
+        _selectedJenis = 'Badminton';
+      } else if (namaLapangan.contains('basket') || namaLapangan.contains('basketball')) {
+        _selectedJenis = 'Basket';
+      } else if (namaLapangan.contains('voli') || namaLapangan.contains('volleyball')) {
+        _selectedJenis = 'Voli';
+      } else if (namaLapangan.contains('tenis') || namaLapangan.contains('tennis')) {
+        _selectedJenis = 'Tenis';
+      } else {
+        // Jika tidak ketemu kata kunci, ambil dari database field 'jenis' jika ada
+        String fallbackJenis = "";
+        if (lapanganData != null) {
+          fallbackJenis = lapanganData['jenis'] ?? widget.bookingData['jenis'] ?? 'Futsal';
+        } else {
+          fallbackJenis = widget.bookingData['jenis'] ?? 'Futsal';
+        }
+        
+        _selectedJenis = fallbackJenis.isNotEmpty 
+            ? '${fallbackJenis[0].toUpperCase()}${fallbackJenis.substring(1).toLowerCase()}' 
+            : 'Futsal';
       }
       
-      // 2. Parsing Tanggal sesuai data booking
+      // 4. Parsing Tanggal Main (Mengamankan format YYYY-MM-DD)
       String rawDate = widget.bookingData['booking_date'] ?? widget.bookingData['tanggal'] ?? '';
       _bookingDateString = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
       
-      // 3. AMBIL JAM ASLI SESUAI DATA BOOKING USER
-      // Memotong string ke 5 karakter pertama (HH:MM) agar formatnya rapi tanpa detik (HH:MM:SS)
-      String rawStart = widget.bookingData['start_time'] ?? '';
-      String rawEnd = widget.bookingData['end_time'] ?? '';
+      // 5. Parsing Jam Mulai dan Selesai (Menghilangkan format detik jika ada)
+      String rawStart = widget.bookingData['start_time'] ?? widget.bookingData['waktu_mulai'] ?? '';
+      String rawEnd = widget.bookingData['end_time'] ?? widget.bookingData['waktu_selesai'] ?? '';
       
       _startTimeString = rawStart.length >= 5 ? rawStart.substring(0, 5) : rawStart;
       _endTimeString = rawEnd.length >= 5 ? rawEnd.substring(0, 5) : rawEnd;
     } else {
+      // Data Fallback jika data kosong
       _bookingDateString = "${DateTime.now().toLocal()}".split(' ')[0];
       _startTimeString = '08:00';
       _endTimeString = '09:00';
     }
   }
 
-  // Custom styling "CSS" di variabel agar kode lebih bersih
-  final _inputDecoration = (String label, IconData icon, {bool enabled = true}) => InputDecoration(
+  // Menentukan icon input secara dinamis sesuai olahraga yang terdeteksi
+  IconData _getSportIcon(String jenis) {
+    switch (jenis.toLowerCase()) {
+      case 'futsal':
+        return Icons.sports_soccer;
+      case 'badminton':
+        return Icons.sports_tennis; 
+      case 'basket':
+        return Icons.sports_basketball;
+      case 'voli':
+        return Icons.sports_volleyball;
+      case 'tenis':
+        return Icons.sports_mma;
+      default:
+        return Icons.sports_handball;
+    }
+  }
+
+  // Desain Input Field dekorasi bergaya Clean
+  InputDecoration _inputDecoration(String label, IconData icon, {bool enabled = true}) => InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: enabled ? Colors.green : Colors.grey),
         fillColor: enabled ? Colors.white : Colors.grey.shade100,
@@ -80,13 +126,14 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     if (_formKey.currentState!.validate()) {
       if (_bookingId == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error: ID Booking tidak valid."), backgroundColor: Colors.red),
+          const SnackBar(content: Text("Error: ID Booking tidak terbaca dari riwayat."), backgroundColor: Colors.red),
         );
         return;
       }
 
+      // Membungkus data ke dalam Model Match untuk dikirim ke API Laravel
       final newMatch = MatchModel(
-        id: _bookingId, 
+        id: _bookingId, // Mengirimkan ID booking asli ke server
         title: _titleController.text,
         jenis: _selectedJenis,
         tanggal: _bookingDateString,
@@ -98,19 +145,32 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         deskripsi: _descController.text,
       );
 
+      // Tampilkan indikator loading sederhana saat memproses jaringan
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.green)),
+      );
+
       bool success = await MatchApi.createMatch(newMatch);
+
+      if (mounted) Navigator.pop(context); // Tutup loading dialog
 
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Match Berhasil Dibuat!"), backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true); 
+          Navigator.pop(context, true); // Kembali ke halaman riwayat sewa dan refresh data
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Gagal membuat match. Cek kembali status booking kamu."), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text("Gagal membuat match. Server menolak permintaan atau status belum Lunas."), 
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
           );
         }
       }
@@ -139,41 +199,45 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             children: [
               const Text(
                 "Detail Pertandingan (Otomatis Terisi)",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
               ),
               const SizedBox(height: 20),
 
-              // Input Judul
+              // Input Judul Match
               TextFormField(
                 controller: _titleController,
                 decoration: _inputDecoration("Judul Match", Icons.title),
-                validator: (v) => v!.isEmpty ? "Isi judul dulu" : null,
+                validator: (v) => v!.isEmpty ? "Isi judul match terlebih dahulu" : null,
               ),
               const SizedBox(height: 15),
 
-              // Input Jenis Olahraga (Dinamis & ReadOnly)
+              // Input Jenis Olahraga (ReadOnly & Mengikuti Deteksi Berhasil)
               TextFormField(
                 key: Key("jenis_$_selectedJenis"), 
                 initialValue: _selectedJenis,
                 readOnly: true,
-                decoration: _inputDecoration("Jenis Olahraga", Icons.sports_soccer, enabled: false),
+                decoration: _inputDecoration(
+                  "Jenis Olahraga", 
+                  _getSportIcon(_selectedJenis), 
+                  enabled: false
+                ),
               ),
               const SizedBox(height: 15),
 
-              // Input Jumlah Pemain
+              // Input Kebutuhan Jumlah Pemain
               TextFormField(
                 controller: _jmlPemainController,
                 keyboardType: TextInputType.number,
                 decoration: _inputDecoration("Maksimal Pemain (Kebutuhan)", Icons.groups),
-                validator: (v) => v!.isEmpty ? "Isi jumlah pemain" : null,
+                validator: (v) {
+                  if (v!.isEmpty) return "Isi jumlah kebutuhan pemain";
+                  if (int.tryParse(v) == null || int.parse(v) <= 0) return "Masukkan angka yang valid";
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
 
-              // Input Deskripsi
+              // Input Catatan / Deskripsi Tambahan
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
@@ -181,7 +245,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               const SizedBox(height: 15),
 
-              // Input Tanggal (Dinamis & ReadOnly)
+              // Input Tanggal Pengambilan otomatis
               TextFormField(
                 key: Key("tanggal_$_bookingDateString"), 
                 initialValue: "Tanggal Main: $_bookingDateString",
@@ -190,7 +254,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               const SizedBox(height: 15),
 
-              // Tampilan Jam (Otomatis Mengikuti Variabel _startTimeString & _endTimeString)
+              // Baris Rentang Waktu Mulai & Selesai
               Row(
                 children: [
                   Expanded(
@@ -214,7 +278,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               ),
               const SizedBox(height: 30),
 
-              // Tombol Simpan
+              // Tombol Eksekusi Kirim Data ke API
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -223,9 +287,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 3,
                   ),
                   child: const Text(
