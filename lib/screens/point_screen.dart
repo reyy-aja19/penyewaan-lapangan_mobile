@@ -29,21 +29,21 @@ class _PointScreenState extends State<PointScreen> {
   try {
     final result = await _apiService.getUserProfile();
 
-    if (result != null && result['status'] == true) {
-      final serverUser = result['data'];
-
-      setState(() {
-        _userPoints = serverUser['points'] ?? 0;
-      });
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user', jsonEncode(serverUser));
-    } else {
-      print("API user gagal / format salah: $result");
+    if (result == null) {
+      print("User API null");
+      return;
     }
+
+    setState(() {
+      _userPoints = result['points'] ?? 0;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user', jsonEncode(result));
   } catch (e) {
     print("Error load user points: $e");
   }
+
 }
   // 2. Ambil list reward sesuai yang diinput di Web Admin
   Future<void> _fetchRewardsFromApi() async {
