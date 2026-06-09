@@ -25,17 +25,26 @@ class _PointScreenState extends State<PointScreen> {
   }
 
   // 1. Ambil poin user dari lokal data pencatatan login
-  Future<void> _loadUserPoints() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? userRaw = prefs.getString('user');
-    if (userRaw != null) {
-      final userData = jsonDecode(userRaw);
-      setState(() {
-        _userPoints = userData['points'] ?? 0;
-      });
-    }
-  }
+ Future<void> _loadUserPoints() async {
+  try {
+    final result = await _apiService.getUserProfile();
 
+    if (result != null && result['status'] == true) {
+      final serverUser = result['data'];
+
+      setState(() {
+        _userPoints = serverUser['points'] ?? 0;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(serverUser));
+    } else {
+      print("API user gagal / format salah: $result");
+    }
+  } catch (e) {
+    print("Error load user points: $e");
+  }
+}
   // 2. Ambil list reward sesuai yang diinput di Web Admin
   Future<void> _fetchRewardsFromApi() async {
     try {
@@ -95,6 +104,8 @@ class _PointScreenState extends State<PointScreen> {
       if (mounted) setState(() => _isProcessingRedeem = false);
     }
   }
+
+  
 
   // Dialog sukses yang menampilkan Kode Redeem / QR sesuai tabel web admin
   void _showSuccessDialog(String rewardName, String code, String? qrUrl) {

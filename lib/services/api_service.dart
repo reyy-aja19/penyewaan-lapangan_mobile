@@ -253,4 +253,30 @@ class ApiService {
       return {'status': false, 'message': 'Terjadi kesalahan koneksi saat menukar: $e'};
     }
   }
+
+  // Tambahkan di dalam class ApiService
+Future<Map<String, dynamic>?> getUserProfile() async {
+  final url = Uri.parse('$baseUrl/user'); // Pastikan route ini mengarah ke auth user
+  final prefs = await SharedPreferences.getInstance();
+  final String? token = prefs.getString('token');
+
+  try {
+    final response = await http.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Mengembalikan data user terbaru (termasuk 'points')
+      return jsonDecode(response.body);
+    }
+    return null;
+  } catch (e) {
+    print("Error sinkronisasi profil: $e");
+    return null;
+  }
+}
 }
